@@ -1,0 +1,1 @@
+from minio_controller import MinioControllerService
