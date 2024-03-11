@@ -7,9 +7,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def get_minio_resource():
-
-
-    MINIO_TOKEN = os.getenv('MINIO_TOKEN')
     MINIO_URL = os.getenv('MINIO_URL')
     MINIO_A_KEY = os.getenv('MINIO_A_KEY')
     MINIO_S_KEY = os.getenv('MINIO_S_KEY')
@@ -36,12 +33,14 @@ def get_kubernetes_api_client( token=None, external_host=None ):
             Kubernetes API client
     """
     # KUBERNETES code goes here
-#config.load_incluster_config() # To run inside the container
+    
+    external_host = os.getenv('KUBE_HOST')
+    token = os.getenv('TOKEN_KUBERNETES')
+    
+    #config.load_incluster_config() # To run inside the container
     config.load_kube_config() # To run externally
     logger.info("Connection to Kubernetes %s", os.getenv('KUBE_HOST'))
 
-    
-    
     aConfiguration = client.Configuration()
     if token != None and \
         external_host != None:
@@ -49,7 +48,13 @@ def get_kubernetes_api_client( token=None, external_host=None ):
         aConfiguration.host = external_host 
         aConfiguration.verify_ssl = False
         aConfiguration.api_key = { "authorization": "Bearer " + token }
-    api_client = client.ApiClient( aConfiguration)
+    api_client = client.ApiClient(aConfiguration)
     
     return api_client
 
+def get_kube_namespace():
+    """ Get the namespace from the environment variables
+        Return:
+            str: namespace
+    """
+    return os.getenv('KUBE_NAMESPACE')

@@ -5,15 +5,14 @@ sys.path.insert(1, 'c:/Users/SergioI/Proyectos/FMI/opentwins-fmi-2.0/utils')
 sys.path.insert(1, 'c:/Users/SergioI/Proyectos/FMI/opentwins-fmi-2.0/service')
 
 from loguru import logger
-
-# from minio_utils import *
-# from kubernetes_controller import KubernetesControllerService
+from errors import FMUError
 
 import dotenv
 import tempfile
 import shutil
 
 from fastapi import FastAPI, UploadFile, File, Response, Request, Depends, APIRouter
+from fastapi.responses import JSONResponse
 from urllib3 import HTTPResponse
 from service import MinioControllerService
 
@@ -24,47 +23,27 @@ fmus = APIRouter(prefix='/fmus', tags=['fmus'])
 fmus.include_router(fmu_name)
 
 
-def extract_file(zip_path, target_file, output_dir):
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-        if target_file in zip_ref.namelist():
-            extracted_path = zip_ref.extract(target_file, output_dir)
-            os.rename(extracted_path, zip_path[:-3]+"xml")
-            return True
-        else:
-            return False
-
 @fmus.post('')
-async def upload_fmu(file: UploadFile = File(...)):
-    return "FMU upload"    
-    # logger.info("Uploading FMU")
-    # tempDir = tempfile.mkdtemp()
+async def upload_fmu(request: Request, file: UploadFile = File(...), storageService: MinioControllerService = Depends(MinioControllerService)):   
+    logger.info("Uploading FMU")
+    # Request data reading
+    namespace = request.headers.get('namespace')
     
-    # # Request data reading
+    if not file.filename:
+        logger.error("File not found")
+        return JSONResponse("File not recieved", 415)
     
-    # if not file.filename:
-    #     logger.error("File not found")
-    #     return Response("File not recieved", 500)
-    
-    # zipPath = os.path.join(tempDir, file.filename)
-    # print(zipPath)
-    
-    # with open(zipPath, "wb") as buffer:
-    #     shutil.copyfileobj(file.file, buffer)
-        
-    # if not extract_file(zipPath, "modelDescription.xml", tempDir):
-    #     return Response("modelDescription.xml not found in the zip file", 500)
-        
-    # logger.info("File saved successfully")
-        
-    # # Upload to minio        
-    # if file_uploader(zipPath, zipPath[:-3]+"xml", file.filename[:-4], context):
-    #     return Response("File uploaded successfully", 200)
-    # # TODO: The bucket name should be a parameter
-    # else:
-    #     return Response("Failed to upload the file", 500)
+    try:
+        storageService.file_uploader(namespace, file)
+        return JSONResponse("File uploaded", 200)
+    except FMUError as e:
+        return JSONResponse(str(e), 500)
 
 @fmus.get('')
-async def get_fmu_list():
-    
-    data = MinioControllerService.fmu_list(context)
+async def get_fmu_list(request: Request, storageService: MinioControllerService = Depends(MinioControllerService)):
+    try:
+        namespace = request.headers.get('namespace')
+        data = storageService.fmu_list(namespace)
+    except FMUError as e:
+        return JSONResponse(str(e), 404)
     return data

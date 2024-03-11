@@ -1,9 +1,15 @@
 import re
+import os
 import boto3
-from fastapi import Depends
+from fastapi import Depends, File
 # Import the logging library and the custom formatter
 from loguru import logger
 from dependencies import get_minio_resource
+from errors import FMUError
+import dotenv
+import tempfile
+import shutil
+import zipfile
 
 class MinioControllerService:
     
@@ -23,11 +29,35 @@ class MinioControllerService:
             logger.info("Bucket %s does not exists", namespace)
             return False
 
-
-    def file_uploader(self, fmu, xml, name, namespace):
+    def extract_file(self, zip_path, target_file, output_dir):
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            if target_file in zip_ref.namelist():
+                extracted_path = zip_ref.extract(target_file, output_dir)
+                os.rename(extracted_path, zip_path[:-3]+"xml")
+                return True
+            else:
+                return False
+    
+    def file_uploader(self, namespace, file):
         # The file to upload, change this path if needed
         # source_file = "/tmp/test-file.txt"
-
+        tempDir = tempfile.mkdtemp()
+        zipPath = os.path.join(tempDir, file.filename)
+        print(zipPath)
+        
+        with open(zipPath, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        if not self.extract_file(zipPath, "modelDescription.xml", tempDir):
+            raise FMUError("modelDescription.xml not found in the zip file")
+            
+        logger.info("File saved successfully")
+        
+        fmu = zipPath
+        xml = zipPath[:-3]+"xml"
+        name = file.filename[:-4]
+        #Antiguo de aqui para arriba.
+        
         # Make the bucket if it doesn't exist.
         current_bucket = self.s3.Bucket(namespace)
         
@@ -51,7 +81,7 @@ class MinioControllerService:
                 logger.warning("Retrying to upload the file")
                 tries +=1
         logger.error("Failed to upload the file")
-        return False
+        raise FMUError("Failed to upload the file")
         
     def fmu_list(self, namespace):
         # List all object paths in bucket that begin with my-prefixname.
@@ -64,10 +94,11 @@ class MinioControllerService:
                 logger.error(e)
                 logger.warning("Retrying to get the file")
                 tries +=1
-        return []
+        raise FMUError("Failed to retrieve FMU list")
 
     def get_fmu_description(self, namespace, fmu):
         # List all object paths in bucket that begin with my-prefixname.
+        
         tries = 0
         while(tries < 3):
             try:
@@ -77,7 +108,7 @@ class MinioControllerService:
                 logger.error(e)
                 logger.warning("Retrying to get the file")
                 tries +=1
-        return False
+        raise FMUError("Failed to retrieve FMU description")
 
     def delete_fmu_files(self, namespace, fmu):
         # List all object paths in bucket that begin with my-prefixname.
@@ -92,6 +123,5 @@ class MinioControllerService:
                 logger.error(e)
                 logger.warning("Retrying to delete the file")
                 tries +=1
-        return False
-
-    
+                
+        raise FMUError("Failed to delete the file")
