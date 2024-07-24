@@ -3,13 +3,26 @@ import os
 from loguru import logger
 import boto3
 from dotenv import load_dotenv
+import psycopg2
 
 load_dotenv()
+
+def get_postgre_client():
+    """ Get the PostgreSQL client from the environment variables
+        Return:
+            str: connection_string
+    """
+    connectionString = "host={} dbname={} user={} password={} port={}".format( os.getenv('POSTGRE_HOST'), os.getenv('POSTGRE_DB'), os.getenv('POSTGRE_USER'), os.getenv('POSTGRE_PASSWORD'), os.getenv('POSTGRE_PORT'))
+    #connectionString = "host='{}' dbname = '{}' user = '{}' password = '{}' port = '{}'".format( os.getenv('POSTGRE_HOST'), os.getenv('POSTGRE_DB'), os.getenv('POSTGRE_USER'), os.getenv('POSTGRE_PASSWORD'), os.getenv('POSTGRE_PORT'))
+    logger.info(connectionString)
+    conn = psycopg2.connect(connectionString)
+    return conn
 
 def get_minio_resource():
     MINIO_URL = os.getenv('MINIO_URL')
     MINIO_A_KEY = os.getenv('MINIO_A_KEY')
     MINIO_S_KEY = os.getenv('MINIO_S_KEY')
+    
 
 
     s3 = boto3.resource('s3', 
@@ -33,21 +46,12 @@ def get_kubernetes_api_client( token=None, external_host=None ):
             Kubernetes API client
     """
     # KUBERNETES code goes here
-    
-    external_host = os.getenv('KUBE_HOST')
-    token = os.getenv('TOKEN_KUBERNETES')
-    
-    #config.load_incluster_config() # To run inside the container
-    config.load_kube_config() # To run externally
-    logger.info("Connection to Kubernetes %s", os.getenv('KUBE_HOST'))
-
     aConfiguration = client.Configuration()
-    if token != None and \
-        external_host != None:
-
-        aConfiguration.host = external_host 
-        aConfiguration.verify_ssl = False
-        aConfiguration.api_key = { "authorization": "Bearer " + token }
+    if os.getenv("INSIDE_CLUSTER"):
+        config.load_incluster_config(aConfiguration) # To run inside the container
+    else:
+        config.load_kube_config() # To run externally
+        
     api_client = client.ApiClient(aConfiguration)
     
     return api_client

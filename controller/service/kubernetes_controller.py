@@ -12,7 +12,7 @@ class KubernetesControllerService:
         self.api_instance = client.CoreV1Api(api_client)
         self.namespace = namespace
 
-    def get_running_simulations(self, context):
+    def get_running_simulations(self, context = None):
         logger.info("Listing pods with their IPs:")
         
         print(context)
@@ -21,7 +21,11 @@ class KubernetesControllerService:
         tries = 0
         while(tries < 3):
             try:
-                pod_list = self.api_instance.list_namespaced_pod(self.namespace, label_selector="kind=fmu-simulation, context={}".format(context),watch=False)
+                if context:
+                    pod_list = self.api_instance.list_namespaced_pod(self.namespace, label_selector="opentwins/kind=fmu-simulation, opentwins/context={}".format(context),watch=False)
+                else:
+                    pod_list = self.api_instance.list_namespaced_pod(self.namespace, label_selector="opentwins/kind=fmu-simulation".format(context),watch=False)
+                    
                 list_of_pods = [
                     {
                         "name": pod.metadata.name,

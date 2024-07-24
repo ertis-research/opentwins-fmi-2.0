@@ -1,1 +1,2 @@
-from minio_controller import MinioControllerService
+from service.minio_controller import MinioControllerService
+from service.kubernetes_controller import KubernetesControllerService

@@ -18,15 +18,15 @@ class MinioControllerService:
         self.REGEX = re.compile(r'^[a-zA-Z0-9]+\.fmu$')
 
 
-    def bucket_exists(self, namespace):
+    def bucket_exists(self, context):
         # Create a CLIENT with the MinIO server playground, its access key
         # and secret key.
         
-        if self.s3.Bucket(namespace).creation_date:
-            logger.info("Bucket %s exists", namespace)
+        if self.s3.Bucket(context).creation_date:
+            logger.info("Bucket %s exists", context)
             return True
         else:
-            logger.info("Bucket %s does not exists", namespace)
+            logger.info("Bucket %s does not exists", context)
             return False
 
     def extract_file(self, zip_path, target_file, output_dir):
@@ -38,7 +38,7 @@ class MinioControllerService:
             else:
                 return False
     
-    def file_uploader(self, namespace, file):
+    def file_uploader(self, context, file):
         # The file to upload, change this path if needed
         # source_file = "/tmp/test-file.txt"
         tempDir = tempfile.mkdtemp()
@@ -59,22 +59,22 @@ class MinioControllerService:
         #Antiguo de aqui para arriba.
         
         # Make the bucket if it doesn't exist.
-        current_bucket = self.s3.Bucket(namespace)
+        current_bucket = self.s3.Bucket(context)
         
         if current_bucket.creation_date:
-            logger.info("Bucket %s already exists", namespace)
+            logger.info("Bucket %s already exists", context)
         else:
             current_bucket.create()
-            logger.info("Created bucket %s", namespace)
+            logger.info("Created bucket %s", context)
 
 
         # Upload the file, renaming it in the process
         tries = 0
         while(tries < 3):
             try:
-                self.s3.meta.client.upload_file(fmu, namespace, name+".fmu")
-                self.s3.meta.client.upload_file(xml, namespace, name+".xml")
-                logger.info("successfully uploaded %s to bucket %s", name, namespace)
+                self.s3.meta.client.upload_file(fmu, context, name+".fmu")
+                self.s3.meta.client.upload_file(xml, context, name+".xml")
+                logger.info("successfully uploaded %s to bucket %s", name, context)
                 return True
             except Exception as e:
                 logger.error(e)
@@ -83,12 +83,15 @@ class MinioControllerService:
         logger.error("Failed to upload the file")
         raise FMUError("Failed to upload the file")
         
-    def fmu_list(self, namespace):
+    def fmu_list(self, context):
         # List all object paths in bucket that begin with my-prefixname.
         tries = 0
         while(tries < 3):
             try:
-                objects = list(self.s3.Bucket(namespace).objects.all())
+                if not self.bucket_exists(context):
+                    break
+
+                objects = list(self.s3.Bucket(context).objects.all())
                 return [i.key[:-4] for i in objects if not self.REGEX.match(i.key)]
             except Exception as e:
                 logger.error(e)
@@ -96,13 +99,13 @@ class MinioControllerService:
                 tries +=1
         raise FMUError("Failed to retrieve FMU list")
 
-    def get_fmu_description(self, namespace, fmu):
+    def get_fmu_description(self, context, fmu):
         # List all object paths in bucket that begin with my-prefixname.
         
         tries = 0
         while(tries < 3):
             try:
-                response = self.s3.meta.client.get_object(Bucket=namespace, Key=fmu+".xml")
+                response = self.s3.meta.client.get_object(Bucket=context, Key=fmu+".xml")
                 return response["Body"].read().decode("utf-8")
             except Exception as e:
                 logger.error(e)
@@ -110,14 +113,14 @@ class MinioControllerService:
                 tries +=1
         raise FMUError("Failed to retrieve FMU description")
 
-    def delete_fmu_files(self, namespace, fmu):
+    def delete_fmu_files(self, context, fmu):
         # List all object paths in bucket that begin with my-prefixname.
         tries = 0
         while(tries < 3):
             try:
-                self.s3.meta.client.delete_object(Bucket=namespace, Key=fmu+".fmu")
-                self.s3.meta.client.delete_object(Bucket=namespace, Key=fmu+".xml")
-                logger.info("successfully deleted %s from bucket %s", fmu, namespace)
+                self.s3.meta.client.delete_object(Bucket=context, Key=fmu+".fmu")
+                self.s3.meta.client.delete_object(Bucket=context, Key=fmu+".xml")
+                logger.info("successfully deleted %s from bucket %s", fmu, context)
                 return True
             except Exception as e:
                 logger.error(e)
