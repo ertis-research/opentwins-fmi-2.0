@@ -4,18 +4,35 @@ from loguru import logger
 import boto3
 from dotenv import load_dotenv
 import psycopg2
+import asyncio
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
 load_dotenv()
 
+def get_sql_client():
+    """ Get the SQL client from the environment variables
+        Return:
+            str: connection_string
+    """
+    connectionString = "postgresql+asyncpg://{}:{}@{}:{}/{}".format( os.getenv('POSTGRE_USER'), os.getenv('POSTGRE_PASSWORD'), os.getenv('POSTGRE_HOST'), os.getenv('POSTGRE_PORT'), os.getenv('POSTGRE_DB'))
+    logger.info(connectionString)
+    engine = create_async_engine(connectionString)
+
+    return engine
+    
 def get_postgre_client():
     """ Get the PostgreSQL client from the environment variables
         Return:
             str: connection_string
     """
-    connectionString = "host={} dbname={} user={} password={} port={}".format( os.getenv('POSTGRE_HOST'), os.getenv('POSTGRE_DB'), os.getenv('POSTGRE_USER'), os.getenv('POSTGRE_PASSWORD'), os.getenv('POSTGRE_PORT'))
+    connectionString = "host={} dbname={} user={} password={} port={} async=1".format( os.getenv('POSTGRE_HOST'), os.getenv('POSTGRE_DB'), os.getenv('POSTGRE_USER'), os.getenv('POSTGRE_PASSWORD'), os.getenv('POSTGRE_PORT'))
     #connectionString = "host='{}' dbname = '{}' user = '{}' password = '{}' port = '{}'".format( os.getenv('POSTGRE_HOST'), os.getenv('POSTGRE_DB'), os.getenv('POSTGRE_USER'), os.getenv('POSTGRE_PASSWORD'), os.getenv('POSTGRE_PORT'))
     logger.info(connectionString)
-    conn = psycopg2.connect(connectionString)
+    #conn = psycopg2.connect(connectionString)
+    conn = psycopg2.connect(host=os.getenv('POSTGRE_HOST'), dbname=os.getenv('POSTGRE_DB'), user=os.getenv('POSTGRE_USER'), password=os.getenv('POSTGRE_PASSWORD'), port=os.getenv('POSTGRE_PORT'), async_=1)
+    
     return conn
 
 def get_minio_resource():

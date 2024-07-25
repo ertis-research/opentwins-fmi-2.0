@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
-
+from errors import DatabaseError
 from routes import BaseRouter
 
 
@@ -11,6 +11,9 @@ __name__ = "0.1.0"
 app = FastAPI()
 app.include_router(BaseRouter)
 
+
+#TODO: Poner aqui todos los errores. El altair es el mas meho
+# Mirar también el heredar de HTTPException
 
 def custom_openapi():
     if app.openapi_schema:

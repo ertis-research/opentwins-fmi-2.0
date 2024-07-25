@@ -10,6 +10,8 @@ import dotenv
 import tempfile
 import shutil
 import zipfile
+import xml.etree.ElementTree as ET
+
 
 class MinioControllerService:
     
@@ -92,7 +94,26 @@ class MinioControllerService:
                     break
 
                 objects = list(self.s3.Bucket(context).objects.all())
-                return [i.key[:-4] for i in objects if not self.REGEX.match(i.key)]
+                
+                fmu_names = [i.key[:-4] for i in objects if not self.REGEX.match(i.key)]
+                
+                fmu_list = []
+                
+                for fmu in fmu_names:
+                    response = self.s3.meta.client.get_object(Bucket=context, Key=fmu+".xml")
+                    xml_description = response["Body"].read().decode("utf-8")
+                    
+                    root = ET.fromstring(xml_description)
+                    modelVariables = root.findall('ModelVariables')[0]
+                    
+                    fmu_variables = [{"name": variable.attrib["name"], "type": variable[0].tag, "default": variable[0].attrib, "description": variable.attrib["description"]} for variable in modelVariables if variable.attrib["initial"] == "exact"]
+
+                    fmu_list.append({
+                        "id": fmu,
+                        "inputs": fmu_variables
+                    })
+                    
+                return fmu_list
             except Exception as e:
                 logger.error(e)
                 logger.warning("Retrying to get the file")
