@@ -1,7 +1,7 @@
 # Import the logging library and the custom formatter
 from loguru import logger
 from fastapi import Depends
-from dependencies import get_postgre_client, get_sql_client
+from dependencies import get_sql_client
 from errors import SimulationError, DatabaseError
 from fastapi.encoders import jsonable_encoder
 import sqlalchemy
@@ -63,13 +63,13 @@ class SQLControllerService:
     
     #TODO: Terminar el delete
     async def delete_simulation_schema(self, context, simulation_id):
-        query = "SELECT sim_schemme FROM fmi_sim_schemmas WHERE id = :id and context = :context".format(simulation_id, context)
+        query = "DELETE FROM FROM fmi_sim_schemmas WHERE id = :id and context = :context".format(simulation_id, context)
         print("Entro")
         try:
             async with self.engine.connect() as connection:
                 result = await connection.execute(text(query), {"context":context, "id":simulation_id})
-        except sqlalchemy.exc.IntegrityError as e:
-            raise DatabaseError("Simulation schema already exists")
+        except Exception as e:
+            raise DatabaseError("Error que no controlo aun")
         
         schema = result.fetchone()[0]
         return schema
