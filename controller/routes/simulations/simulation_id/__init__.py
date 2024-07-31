@@ -19,6 +19,6 @@ async def get_simulation_schema(request: Request, context: str, simulation_id: s
 async def delete_simulation_schema(request: Request, context: str, simulation_id: str, sqlController: SQLControllerService = Depends(SQLControllerService)):
     try:
         data = await sqlController.delete_simulation_schema(context, simulation_id)
-        return JSONResponse(data, 200)
+        return JSONResponse("Schema deleted succesfully", 200)
     except SimulationError:
         return JSONResponse("Failed retrieving info", 404)

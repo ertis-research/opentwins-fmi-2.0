@@ -44,7 +44,7 @@ class SQLControllerService:
         try:
             async with self.engine.connect() as connection:
                 result = await connection.execute(text(query), {"context":context, "name":name, "id":id, "sim_schemme":json.dumps(data)})
-                connection.commit()
+                await connection.commit()
         except sqlalchemy.exc.IntegrityError as e:
             raise DatabaseError("Simulation schema already exists")
         print(result)
@@ -63,13 +63,13 @@ class SQLControllerService:
     
     #TODO: Terminar el delete
     async def delete_simulation_schema(self, context, simulation_id):
-        query = "DELETE FROM FROM fmi_sim_schemmas WHERE id = :id and context = :context".format(simulation_id, context)
+        query = "DELETE FROM fmi_sim_schemmas WHERE id = :id and context = :context".format(simulation_id, context)
         print("Entro")
         try:
             async with self.engine.connect() as connection:
                 result = await connection.execute(text(query), {"context":context, "id":simulation_id})
+                await connection.commit()
         except Exception as e:
             raise DatabaseError("Error que no controlo aun")
         
-        schema = result.fetchone()[0]
-        return schema
+        print(result)
