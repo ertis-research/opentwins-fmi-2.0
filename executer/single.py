@@ -39,7 +39,7 @@ if __name__ == "__main__":
     SIMULATION_NAME = os.getenv('SIMULATION_NAME')
     SIMULATION_ID = os.getenv('SIMULATION_ID')
 
-    # Target broker information
+    # Target broker informationWW
     BROKER_IP = os.getenv('BROKER_IP')
     BROKER_PORT = os.getenv('BROKER_PORT')
     BROKER_TOPIC = os.getenv('BROKER_TOPIC')
@@ -69,4 +69,5 @@ if __name__ == "__main__":
     # Send the results to the broker
     send_results_to_broker(simulation_results)
 
+    print("Simulation finished")
 
