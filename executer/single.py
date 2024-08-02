@@ -1,6 +1,7 @@
 import sys
 import os
 import time
+import json
 import numpy as np
 import pandas as pd
 from fmpy import simulate_fmu
@@ -79,8 +80,12 @@ def retrieve_data():
             raise Exception("Input type not recognized")
         
         start_values[input["id"]] = start_value
+        
+    outputs = [variable["id"] for variable in schema["outputs"]]
                             
     start_values = None # TODO: Remove this line when the schema is ready
+    outputs = None # TODO: Remove this line when the schema is ready
+    
     retrieved_data = {
             "variable_graph"      : os.getenv('VARIABLE_GRAPH'),
             
@@ -101,7 +106,8 @@ def retrieve_data():
             # FMU information
             "FMU_NAME"    : os.getenv('FMU_NAME'),
             "CONTEXT"     : os.getenv('CONTEXT'),
-            "INPUTS"     : start_values
+            "INPUTS"     : start_values,
+            "OUTPUTS"    : outputs
     }
     
     
@@ -131,13 +137,15 @@ def run_simulation(data, fmu_path):
     
 def send_results_to_broker(results):
     broker_controller = MessageBrokerController()
-    print(results)
+    results = results.transpose()
     
     for index, row in results.iterrows():
         result = row.to_dict()
-        print(result)
+        result["SIMULATION_ID"] = os.getenv('SIMULATION_ID')
+        result["SIMULATION_NAME"] = os.getenv('SIMULATION_NAME') 
         
-    #broker_controller.send_message(results)
+        result = json.dumps(result)
+        broker_controller.send_message(result)
 
 
 

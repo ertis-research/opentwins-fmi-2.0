@@ -17,5 +17,4 @@ class MessageBrokerController:
         self.client.connect(self.BROKER_IP, self.BROKER_PORT)
 
     def send_message(self, messages):
-        for message in messages:
-            self.client.publish(self.BROKER_TOPIC, message)
+        self.client.publish(self.BROKER_TOPIC, messages)
