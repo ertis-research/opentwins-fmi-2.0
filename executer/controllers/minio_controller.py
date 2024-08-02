@@ -25,7 +25,6 @@ class MinioControllerService:
                             endpoint_url=MINIO_URL,
                             config = boto3.session.Config(signature_version='s3v4'),
                             )
-        self.REGEX = re.compile(r'^[a-zA-Z0-9]+\.fmu$')
 
     def bucket_exists(self, context):
         # Create a CLIENT with the MinIO server playground, its access key

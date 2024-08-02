@@ -43,7 +43,9 @@ def get_minio_resource():
     MINIO_A_KEY = os.getenv('MINIO_A_KEY')
     MINIO_S_KEY = os.getenv('MINIO_S_KEY')
     
-
+    print(MINIO_URL)
+    print(MINIO_A_KEY)
+    print(MINIO_S_KEY)
 
     s3 = boto3.resource('s3', 
                         aws_access_key_id=MINIO_A_KEY, 

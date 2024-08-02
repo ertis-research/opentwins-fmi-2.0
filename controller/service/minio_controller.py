@@ -17,7 +17,7 @@ class MinioControllerService:
     
     def __init__(self, s3 : boto3.resource = Depends(get_minio_resource)) -> None:
         self.s3 = s3
-        self.REGEX = re.compile(r'^[a-zA-Z0-9]+\.fmu$')
+        #self.REGEX = re.compile(r'^[a-zA-Z0-9]+\.fmu$')
 
 
     def bucket_exists(self, context):
@@ -25,10 +25,10 @@ class MinioControllerService:
         # and secret key.
         
         if self.s3.Bucket(context).creation_date:
-            logger.info("Bucket %s exists", context)
+            logger.info(f"Bucket {context} exists")
             return True
         else:
-            logger.info("Bucket %s does not exists", context)
+            logger.info(f"Bucket {context} does not exists")
             return False
 
     def extract_file(self, zip_path, target_file, output_dir):
@@ -88,36 +88,56 @@ class MinioControllerService:
     def fmu_list(self, context):
         # List all object paths in bucket that begin with my-prefixname.
         tries = 0
-        while(tries < 3):
-            try:
-                if not self.bucket_exists(context):
-                    break
+        #while(tries < 3):
+            # try:
+            # if not self.bucket_exists(context):
+            #     break
 
-                objects = list(self.s3.Bucket(context).objects.all())
-                
-                fmu_names = [i.key[:-4] for i in objects if not self.REGEX.match(i.key)]
-                
-                fmu_list = []
-                
-                for fmu in fmu_names:
-                    response = self.s3.meta.client.get_object(Bucket=context, Key=fmu+".xml")
-                    xml_description = response["Body"].read().decode("utf-8")
-                    
-                    root = ET.fromstring(xml_description)
-                    modelVariables = root.findall('ModelVariables')[0]
-                    
-                    fmu_variables = [{"name": variable.attrib["name"], "type": variable[0].tag, "default": variable[0].attrib, "description": variable.attrib["description"]} for variable in modelVariables if variable.attrib["initial"] == "exact"]
-
-                    fmu_list.append({
-                        "id": fmu,
-                        "inputs": fmu_variables
+        bucket_result = self.s3.Bucket(context).objects.all()
+        objects = list(bucket_result)
+        print(len(objects))
+        
+        #fmu_names = [i.key[:-4] for i in objects if self.REGEX.match(i.key[:4])] #No se porque falla, pero repite algun que otro nombre
+        fmu_names = [i.key[:-4] for i in objects if "xml" in i.key[-3:]]
+        
+        fmu_list = []
+        
+        for fmu in fmu_names:
+            print(fmu)
+            response = self.s3.meta.client.get_object(Bucket=context, Key=fmu+".xml")
+            xml_description = response["Body"].read().decode("utf-8")
+            
+            root = ET.fromstring(xml_description)
+            modelVariables = root.findall('ModelVariables')[0]
+            
+            fmu_variables = []
+            for variable in modelVariables:
+                if "initial" in variable.attrib and variable.attrib["initial"] == "exact" or "causality" in variable.attrib and variable.attrib["causality"] == "input":
+                    fmu_variables.append({
+                        "name": variable.attrib["name"],
+                        "type": variable[0].tag,
+                        "default": variable[0].attrib,
+                        "description": variable.attrib["description"] if "description" in variable.attrib else ""
                     })
-                    
-                return fmu_list
-            except Exception as e:
-                logger.error(e)
-                logger.warning("Retrying to get the file")
-                tries +=1
+                # elif "causality" in variable.attrib and variable.attrib["causality"] == "input":
+                #     fmu_variables.append({
+                #         "name": variable.attrib["name"],
+                #         "type": variable[0].tag,
+                #         "default": variable[0].attrib,
+                #         "description": variable.attrib["description"] if "description" in variable.attrib else ""
+                #     })
+            #fmu_variables = [{"name": variable.attrib["name"], "type": variable[0].tag, "default": variable[0].attrib, "description": variable.attrib["description"]} for variable in modelVariables if variable.attrib["initial"] == "exact" or variable.attrib["causality"] == "input"]
+
+            fmu_list.append({
+                "id": fmu,
+                "inputs": fmu_variables
+            })
+            
+        return fmu_list
+            # except Exception as e:
+            #     logger.error(e)
+            #     logger.warning("Retrying to get the file")
+            #     tries +=1
         raise FMUError("Failed to retrieve FMU list")
 
     def get_fmu_description(self, context, fmu):
