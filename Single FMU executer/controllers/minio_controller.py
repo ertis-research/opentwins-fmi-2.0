@@ -3,7 +3,6 @@ import os
 import boto3
 # Import the logging library and the custom formatter
 from loguru import logger
-from dotenv import load_dotenv
 import tempfile
 import shutil
 import zipfile

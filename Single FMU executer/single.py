@@ -8,7 +8,6 @@ from fmpy import simulate_fmu
 from fmpy.util import download_test_file, download_file
 from fmpy.simulation import _get_output_variables
 from fmpy import *
-import matplotlib.pyplot as plt
 from controllers.minio_controller import MinioControllerService
 from controllers.message_broker_controller import MessageBrokerController
 from controllers.influxdb_controller import InfluxDBController
@@ -30,8 +29,11 @@ def retrieve_data():
     #ANOTATIONS: FMU NAME IS THE NAME WITHOUT THE .FMU EXTENSION
     start_values = {}
     
-    inputs = os.getenv('SIMULATION_INPUTS')
-    outputs = os.getenv('SIMULATION_OUTPUTS')
+    inputs = json.loads(os.getenv('SIMULATION_INPUTS'))
+    outputs = json.loads(os.getenv('SIMULATION_OUTPUTS'))
+    
+    print(type(inputs))
+    print(inputs)
     
     schema = {
                 "inputs":[
@@ -108,7 +110,8 @@ def retrieve_data():
             "SIMULATION_LAST_VALUE"       : bool(os.getenv('SIMULATION_LAST_VALUE')),
             
             "INPUTS"     : start_values,
-            "OUTPUTS"    : outputs
+            "OUTPUTS"    : outputs,
+            "FMU_NAME"   : json.loads(os.getenv('SIMULATION_FMUS'))[0]["id"]
     }
     
     
@@ -162,7 +165,7 @@ if __name__ == "__main__":
     retrieved_data = retrieve_data()
     logger.info("Retrieved data from environment variables successfully")
     fmu_name = retrieved_data['FMU_NAME']
-    context = retrieved_data['CONTEXT']
+    context = retrieved_data['SIMULATION_CONTEXT']
     
     # Download the FMU
     logger.info("Downloading FMU")
