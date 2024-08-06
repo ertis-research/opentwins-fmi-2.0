@@ -6,9 +6,10 @@ class FMUError(FMIError):
     pass
 
 
-class SimulationError(FMIError):
+class SimulationError(Exception):
     pass
-
+class DeleteSimulationError(SimulationError):
+    pass
 
 class DatabaseError(Exception):
     pass

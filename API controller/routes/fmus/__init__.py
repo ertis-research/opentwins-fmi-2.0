@@ -30,17 +30,11 @@ async def upload_fmu(request: Request, context: str, file: UploadFile = File(...
         logger.error("File not found")
         return JSONResponse("File not recieved", 415)
     
-    try:
-        storageService.file_uploader(context, file)
-        return JSONResponse("File uploaded", 200)
-    except FMUError as e:
-        return JSONResponse(str(e), 500)
+    storageService.file_uploader(context, file)
+    return JSONResponse("File uploaded", 200)
 
 
 @fmus.get('')
 async def get_fmu_list(request: Request, context: str, storageService: MinioControllerService = Depends(MinioControllerService)):
-    try:
-        data = storageService.fmu_list(context)
-        return data
-    except FMUError as e:
-        return JSONResponse(str(e), 404)
+    data = storageService.fmu_list(context)
+    return data

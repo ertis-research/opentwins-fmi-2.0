@@ -5,7 +5,7 @@ from kubernetes import client
 from loguru import logger
 from fastapi import APIRouter, Request, Depends
 from dependencies import get_kubernetes_api_client, get_kube_namespace
-from errors import SimulationError
+from errors import *
 from fastapi.encoders import jsonable_encoder
 from service.sql_controller import SQLControllerService
 
@@ -21,147 +21,144 @@ class KubernetesControllerService:
         self.batch_api = client.BatchV1Api(api_client)
         self.namespace = namespace
         
-        
-        
+         
     def check_if_exists(self, context: str, simulationId: str):
-        # logger.info("Searching in deployment list")
-        # list_of_deployments = self.k8s_apps_v1.list_namespaced_deployment(self.namespace, label_selector="opentwins.fmi/kind=ot-fmi, opentwins.fmi/context={}, opentwins.fmi/simulation-id={}".format(context, simulationId))
-        # if list_of_deployments.items:
-        #     return "Deployment"
+        logger.info("Searching in job list")
+        label_selector = "opentwins.fmi/kind=ot-fmi, opentwins.fmi/context={}, opentwins.fmi/id={}, opentwins.fmi/schedule=one-time".format(context, simulationId)
+        list_of_jobs = self.batch_api.list_namespaced_job(self.namespace, label_selector=label_selector)
+        if list_of_jobs.items:
+            return "Job"
         
         logger.info("Searching in cronjob list")
-        list_of_cronjobs = self.batch_api.list_namespaced_cron_job(self.namespace, label_selector="opentwins.fmi/kind=ot-fmi, opentwins.fmi/context={}, opentwins.fmi/simulation-id={}".format(context, simulationId))
-        
+        label_selector = "opentwins.fmi/kind=ot-fmi, opentwins.fmi/context={}, opentwins.fmi/id={}, opentwins.fmi/schedule=scheduled".format(context, simulationId)
+        list_of_cronjobs = self.batch_api.list_namespaced_cron_job(self.namespace, label_selector=label_selector)
         if list_of_cronjobs.items:
             return "CronJob"
+        
         
         return False
 
     async def get_running_simulations(self, context: str = None):
         logger.info("Listing pods with their IPs:")
         
+        label_selector = "opentwins.fmi/kind=ot-fmi"
+        if context != None:
+            label_selector += ", opentwins.fmi/context={}".format(context)
         
-        tries = 0
-        while(tries < 3):
-            try:
-                label_selector = "opentwins.fmi/kind=ot-fmi-simulation"
-                if context != None:
-                    label_selector += ", opentwins.fmi/context={}".format(context)
-                
-                print(label_selector)
-                
-                cronjob_list = self.batch_api.list_namespaced_cron_job(self.namespace, label_selector=label_selector) 
-                
-                list_of_cronjobs = []
-                for cronjob in cronjob_list.items:
-                    pod_list = self.api_instance.list_namespaced_pod(self.namespace, label_selector="opentwins.fmi/kind=ot-fmi-simulation, opentwins.fmi/type=cronjob, opentwins.fmi/context={}, opentwins.fmi/simulation-id={}".format(cronjob.metadata.labels["opentwins.fmi/context"], cronjob.metadata.labels["opentwins.fmi/simulation-id"]),watch=False)
-                    
-                    list_of_pods = [
-                        {
-                            "simulation-id": pod.metadata.labels["opentwins.fmi/simulation-id"],
-                            "phase": pod.status.phase,
-                            "status": pod.status.container_statuses[0].ready,
-                            "creation_timestamp": pod.metadata.creation_timestamp.strftime("%Y/%m/%d, %H:%M:%S%z"),
-                        } for pod in pod_list.items
-                    ]
-                    
-                    cronjob_info = {
-                        "schema-id": cronjob.metadata.labels["opentwins.fmi/schema-id"],
-                        "simulation-id": cronjob.metadata.labels["opentwins.fmi/simulation-id"],
-                        "name": cronjob.metadata.labels["opentwins.fmi/name"],
-                        "namespace":cronjob.metadata.labels["opentwins.fmi/context"],
-                        "type": "cronjob",
-                        "schedule": cronjob.spec.schedule,
-                        #"twins": self.convert_twin_list(cronjob.metadata.labels["opentwins.fmi/twins"]),
-                        "status": "Active" if not cronjob.spec.suspend else "Paused",
-                        "last_scheduled" : cronjob.status.last_schedule_time.strftime("%Y/%m/%d, %H:%M:%S+%z") if cronjob.status.last_schedule_time is not None else None,
-                        "last_scheduled_successful" : cronjob.status.last_successful_time.strftime("%Y/%m/%d, %H:%M:%S%z") if cronjob.status.last_successful_time is not None else None,
-                        "pods" : list_of_pods
-                        } 
-                    list_of_cronjobs.append(cronjob_info)
-                
-                list_of_simulations = list_of_cronjobs + []
-                return list_of_simulations
-            except Exception as e:
-                logger.error(e)
-                logger.warning("Retrying to get the pods")
-                tries +=1
-        raise SimulationError("Failed to get the pods")
+        ############################################################
+        # SPECIFIC FOR CRONJOBS
         
-    async def delete_simulation(self, context: str, simulationId: str):
-        logger.info("Deleting simulation %s", simulationId)
+        cronjob_list = self.batch_api.list_namespaced_cron_job(self.namespace, label_selector=label_selector)              
+        
+        list_of_cronjobs = []
+        for cronjob in cronjob_list.items:
+            pod_list = self.api_instance.list_namespaced_pod(self.namespace, label_selector="opentwins.fmi/kind=ot-fmi, opentwins.fmi/schedule=scheduled, opentwins.fmi/context={}, opentwins.fmi/id={}".format(cronjob.metadata.labels["opentwins.fmi/context"], cronjob.metadata.labels["opentwins.fmi/id"]),watch=False)
+            
+            list_of_pods = [
+                {
+                    "simulation-id": pod.metadata.labels["opentwins.fmi/id"],
+                    "phase": pod.status.phase,
+                    "status": pod.status.container_statuses[0].ready,
+                    "creation_timestamp": pod.metadata.creation_timestamp.strftime("%Y/%m/%d, %H:%M:%S%z"),
+                } for pod in pod_list.items
+            ]
+            
+            cronjob_info = {
+                "schema-id": cronjob.metadata.labels["opentwins.fmi/schema"],
+                "simulation-id": cronjob.metadata.labels["opentwins.fmi/id"],
+                "namespace":cronjob.metadata.labels["opentwins.fmi/context"],
+                "type": "cronjob",
+                "schedule": cronjob.spec.schedule,
+                "status": "Active" if not cronjob.spec.suspend else "Paused",
+                "last_scheduled" : cronjob.status.last_schedule_time.strftime("%Y/%m/%d, %H:%M:%S+%z") if cronjob.status.last_schedule_time is not None else None,
+                "last_scheduled_successful" : cronjob.status.last_successful_time.strftime("%Y/%m/%d, %H:%M:%S%z") if cronjob.status.last_successful_time is not None else None,
+                "pods" : list_of_pods
+                } 
+            list_of_cronjobs.append(cronjob_info)
+        
+        # SPECIFIC FOR CRONJOBS    
+        ############################################################
+        
+        ############################################################
+        # SPECIFIC FOR JOBS
+        
+        job_list = self.batch_api.list_namespaced_job(self.namespace, label_selector=label_selector)
 
-        while(tries < 3):        
-            try:
-                kind = self.check_if_exists(context, simulationId)
-                if not kind:
-                    raise SimulationError("There is not any simulation with that characteristics")
-                
-                logger.info("Found fmi, deleting...")
-                
-                self.batch_api.delete_namespaced_cron_job("opentwins-fmi-"+simulationId, self.namespace)
-                    
-                return True
-            except Exception as e:
-                logger.error(e)
-                logger.error("Failed to delete cronjob %s", simulationId)
-                tries +=1
-        raise SimulationError("Failed deleting simulation")
+        list_of_jobs = []
+        for job in job_list.items:
+            pod_list = self.api_instance.list_namespaced_pod(self.namespace, label_selector="opentwins.fmi/kind=ot-fmi, opentwins.fmi/schedule=one-time, opentwins.fmi/context={}, opentwins.fmi/id={}".format(job.metadata.labels["opentwins.fmi/context"], job.metadata.labels["opentwins.fmi/id"]),watch=False)
+            
+            list_of_pods = [
+                {
+                    "simulation-id": pod.metadata.labels["opentwins.fmi/id"],
+                    "phase": pod.status.phase,
+                    "status": pod.status.container_statuses[0].ready,
+                    "creation_timestamp": pod.metadata.creation_timestamp.strftime("%Y/%m/%d, %H:%M:%S%z"),
+                } for pod in pod_list.items
+            ]
+            
+            job_info = {
+                "schema-id": job.metadata.labels["opentwins.fmi/schema"],
+                "simulation-id": job.metadata.labels["opentwins.fmi/id"],
+                "namespace":job.metadata.labels["opentwins.fmi/context"],
+                "type": "one-time",
+                "status": "Active" if not job.spec.suspend else "Paused",
+                "pods" : list_of_pods
+                } 
+            list_of_cronjobs.append(job_info)
+            
+        # SPECIFIC FOR JOBS
+        ############################################################
+        
+        list_of_simulations = list_of_cronjobs + list_of_jobs
+        return list_of_simulations
+    
+    async def delete_simulation(self, context: str, simulationId: str):
+        logger.info("Deleting simulation %s", simulationId)    
+        kind = self.check_if_exists(context, simulationId)
+        if not kind:
+            raise DeleteSimulationError("There is not any simulation with that characteristics")
+        elif kind == "Job":
+            logger.info("Found fmi job, deleting...")
+            self.batch_api.delete_namespaced_job('fmu-job-'+simulationId, self.namespace)
+        else:
+            logger.info("Found fmi cronjob, deleting...")
+            self.batch_api.delete_namespaced_cron_job('fmu-cronjob-'+simulationId, self.namespace)
+            
+        return True
 
     async def stop_resume_simulation(self, context: str, simulationId: str, nreplicas = 0):
-        tries = 0
-        while(tries < 3):   
-            try: 
-                kind = self.check_if_exists(context, simulationId)
-                if not kind:
-                    raise SimulationError("There is not any simulation with that characteristics")
-                logger.info("Found, patching the process...")
-                
-                # if kind == "Deployment":
-                #     self.k8s_apps_v1.patch_namespaced_deployment("opentwins-fmi-"+simulationId, self.namespace ,{'spec': {'replicas': nreplicas}})
-                # else:
-                
-                # Para CronJob
-                nreplicas = False if nreplicas else True
-                self.batch_api.patch_namespaced_cron_job("opentwins-fmi-"+simulationId, self.namespace, {'spec': {'suspend' : nreplicas}})
-                
-                return True
-            except Exception as e:
-                logger.error(e)
-                logger.error("Failed to patch simulation %s", simulationId)
-                tries+=1
-        raise SimulationError("Failed to patch simulation")
+        kind = self.check_if_exists(context, simulationId)
+        if not kind:
+            raise SimulationError("There is not any simulation with that characteristics")
+        elif kind == "Job":
+            raise SimulationError("Cannot pause a one-time simulation")
+        else:
+            logger.info("Found, patching the process...")
+            nreplicas = False if nreplicas else True
+            self.batch_api.patch_namespaced_cron_job("fmu-cronjob-"+simulationId, self.namespace, {'spec': {'suspend' : nreplicas}})
+ 
+        return True
     
     async def get_simulation_info(self, context: str, simulationId: str):
         logger.info("Getting deployment %s info", simulationId)
         
-        tries = 0
-        while(tries < 3): 
-            try: 
-                kind = self.check_if_exists(context, simulationId)
-                if not kind:
-                    raise SimulationError("There is not any simulation with that characteristics")
-                logger.info("Found, retrieving info...")
-                
-                # if kind == "Deployment":
-                #     data = self.k8s_apps_v1.read_namespaced_deployment("opentwins-fmi-"+simulationId, self.namespace)
-                # else:
-                data = self.batch_api.read_namespaced_cron_job("opentwins-fmi-"+simulationId, self.namespace)
-                    
-                data_dict = data.to_dict()
-                data_dict["metadata"]["labels"]["opentwins.fmi/twins"] = self.convert_twin_list(data_dict["metadata"]["labels"]["opentwins.fmi/twins"])
-                
-                
-                #return sendBackData
-                data_dict = json.dumps(data_dict, default=str)
-                return data_dict
-            except Exception as e:
-                logger.error(e)
-                logger.error("Failed to get deployment %s info", simulationId)
-                tries+=1
-        raise SimulationError("Failed retreiving simulation info")
+        
+        kind = self.check_if_exists(context, simulationId)
+        if not kind:
+            raise SimulationError("There is not any simulation with that characteristics")
+        elif kind == "Job":
+            logger.info("Found, retrieving info...")
+            data = self.batch_api.read_namespaced_job('fmu-job-'+simulationId, self.namespace)
+        else:
+            logger.info("Found, retrieving info...")
+            data = self.batch_api.read_namespaced_cron_job('fmu-cronjob-'+simulationId, self.namespace)
+            
+        data_dict = data.to_dict()                
+        
+        data_dict = json.dumps(data_dict, default=str)
+        return data_dict
     
-    # TODO: Falta probar el metodo mas a fondo
     async def deploy_simulation(self, executionInfo: str, context: str, sqlController: SQLControllerService):
        
         SIMULATION_ID = executionInfo["id"]
@@ -242,13 +239,13 @@ class KubernetesControllerService:
         SIMULATION_ENV_VAR.append({"name": "SIMULATION_FMUS", "value": json.dumps(schema["fmus"])})
         SIMULATION_ENV_VAR.append({"name": "SIMULATION_FMUS_SCHEMA", "value": json.dumps(schema["schema"])})
         
-        print(SIMULATION_SCHEDULE)
+        
         if SIMULATION_SCHEDULE == "one-time":
             manifest = {
                 'apiVersion': "batch/v1",
                 'kind': "Job",
                 'metadata': {
-                    'name': 'fmu-job-'+SIMULATION_ID+"-"+SIMULATION_SCHEMA,
+                    'name': 'fmu-job-'+SIMULATION_ID,
                     'labels': {}
                 },
                 "spec": {
@@ -258,8 +255,8 @@ class KubernetesControllerService:
                         },
                         "spec": {
                             "containers": [{
-                                'image': "ertis/opentwins-fmu-runner-v2:latest", 
-                                'name': 'fmu-executer-'+SIMULATION_ID+"-"+SIMULATION_SCHEMA,
+                                'image': "ertis/opentwins-fmu-runner-single-v2:latest" if len(schema["fmus"]) == 1 else "ertis/opentwins-fmu-runner-multiple-v2:latest", 
+                                'name': 'fmu-executer-'+SIMULATION_ID,
                                 'env': SIMULATION_ENV_VAR,
                                 'imagePullPolicy': 'Always'
                             }],
@@ -274,11 +271,15 @@ class KubernetesControllerService:
             manifest["metadata"]["labels"]["opentwins.fmi/context"] = context
             manifest["metadata"]["labels"]["opentwins.fmi/kind"] = "ot-fmi"
             manifest["metadata"]["labels"]["opentwins.fmi/schema"] = SIMULATION_SCHEMA
+            manifest["metadata"]["labels"]["opentwins.fmi/schedule"] = "one-time"
+            
             
             manifest["spec"]["template"]["metadata"]["labels"]["opentwins.fmi/id"] = SIMULATION_ID
             manifest["spec"]["template"]["metadata"]["labels"]["opentwins.fmi/context"] = context
             manifest["spec"]["template"]["metadata"]["labels"]["opentwins.fmi/kind"] = "ot-fmi"
             manifest["spec"]["template"]["metadata"]["labels"]["opentwins.fmi/schema"] = SIMULATION_SCHEMA
+            manifest["spec"]["template"]["metadata"]["labels"]["opentwins.fmi/schedule"] = "one-time"
+            
             
             logger.info('Creating job')
             resp = self.batch_api.create_namespaced_job(body=manifest, namespace=self.namespace)
@@ -290,7 +291,7 @@ class KubernetesControllerService:
                 'apiVersion': 'batch/v1',
                 'kind': 'CronJob', # Esto hay que parametrizarlo
                 'metadata': {
-                    'name': 'fmu-cronjob-'+SIMULATION_ID+"-"+SIMULATION_SCHEMA,
+                    'name': 'fmu-cronjob-'+SIMULATION_ID,
                     'labels': {}
                 },
                 'spec': {
@@ -303,8 +304,8 @@ class KubernetesControllerService:
                                 },
                                 "spec": {
                                     'containers': [{
-                                            'image': "ertis/opentwins-fmu-runner-v2:latest", 
-                                            'name': 'fmu-executer-'+SIMULATION_ID+"-"+SIMULATION_SCHEMA,
+                                            'image': "ertis/opentwins-fmu-runner-single-v2:latest" if len(schema["fmus"]) == 1 else "ertis/opentwins-fmu-runner-multiple-v2:latest", 
+                                            'name': 'fmu-executer-'+SIMULATION_ID,
                                             'env': SIMULATION_ENV_VAR,
                                             'imagePullPolicy': 'Always'
                                         }],
@@ -320,11 +321,14 @@ class KubernetesControllerService:
             manifest["metadata"]["labels"]["opentwins.fmi/context"] = context
             manifest["metadata"]["labels"]["opentwins.fmi/kind"] = "ot-fmi"
             manifest["metadata"]["labels"]["opentwins.fmi/schema"] = SIMULATION_SCHEMA
+            manifest["metadata"]["labels"]["opentwins.fmi/schedule"] = "scheduled"
+            
             
             manifest["spec"]["jobTemplate"]["spec"]["template"]["metadata"]["labels"]["opentwins.fmi/id"] = SIMULATION_ID
             manifest["spec"]["jobTemplate"]["spec"]["template"]["metadata"]["labels"]["opentwins.fmi/context"] = context
             manifest["spec"]["jobTemplate"]["spec"]["template"]["metadata"]["labels"]["opentwins.fmi/kind"] = "ot-fmi"
             manifest["spec"]["jobTemplate"]["spec"]["template"]["metadata"]["labels"]["opentwins.fmi/schema"] = SIMULATION_SCHEMA
+            manifest["spec"]["jobTemplate"]["spec"]["template"]["metadata"]["labels"]["opentwins.fmi/schedule"] = "scheduled"
             
             
             logger.info('Creating Cronjob')
