@@ -15,7 +15,7 @@ from controllers.influxdb_controller import InfluxDBController
 from loguru import logger
 
 
-#TODO: Definir como voy a conocer que fmus tengo que ejecutar
+
 def get_variable_from_influxdb(influxController, query):
     return influxController.get_variable(query)
 

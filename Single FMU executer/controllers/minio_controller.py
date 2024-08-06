@@ -9,7 +9,6 @@ import shutil
 import zipfile
 from errors.errors import FMUError
 
-load_dotenv()
 
 class MinioControllerService:
     
