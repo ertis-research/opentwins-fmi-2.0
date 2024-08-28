@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    name: opentwins-fmi-api
+  name: opentwins-fmi-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: pod-opentwins-fmi-api
+  template:
+    metadata:
+      labels:
+        name: pod-opentwins-fmi-api
+      name: opentwins-fmi-api
+    spec:
+      serviceAccountName: ot-agents
+      automountServiceAccountToken: true
+      containers:
+        - image: registry.ertis.uma.es/opentwins-fmi-simulator-api-v2:latest
+          name: opentwins-fmi-api
+          env:
+          - name: KUBE_NAMESPACE
+            value: digitaltwins
+          - name: INSIDE_CLUSTER
+            value: "True"
+          - name: INFLUXDB_HOST
+            value: https://influx.ertis.uma.es
+          - name: INFLUXDB_TOKEN
+            value: "F5qR6Tl_yZs6kL-9vb5WXSuToZ0fCZ5Zrp54aCJhWRA6XQ59hx322yJVRWQgU0Aa4Cjwq12l7Me3K5HtNkcgww=="
+          - name: INFLUXDB_DB
+            value: OpenTwins
+          - name: MINIO_TOKEN
+            value: ZXlKaGJHY2lPaUpTVXpJMU5pSXNJbXRwWkNJNklrZFdlbkJZV2t4M1IyeFNRMDFEV1VaYVNVSjJjRXhYVnpoV1QwNXFhakp1VVU5TFZsSmhSMUJCTFZVaWZRLmV5SnBjM01pT2lKcmRXSmxjbTVsZEdWekwzTmxjblpwWTJWaFkyTnZkVzUwSWl3aWEzVmlaWEp1WlhSbGN5NXBieTl6WlhKMmFXTmxZV05qYjNWdWRDOXVZVzFsYzNCaFkyVWlPaUprYVdkcGRHRnNkSGRwYm5NaUxDSnJkV0psY201bGRHVnpMbWx2TDNObGNuWnBZMlZoWTJOdmRXNTBMM05sWTNKbGRDNXVZVzFsSWpvaVkyOXVjMjlzWlMxellTMXpaV055WlhRaUxDSnJkV0psY201bGRHVnpMbWx2TDNObGNuWnBZMlZoWTJOdmRXNTBMM05sY25acFkyVXRZV05qYjNWdWRDNXVZVzFsSWpvaVkyOXVjMjlzWlMxellTSXNJbXQxWW1WeWJtVjBaWE11YVc4dmMyVnlkbWxqWldGalkyOTFiblF2YzJWeWRtbGpaUzFoWTJOdmRXNTBMblZwWkNJNklqYzRORFptWldFekxUbGpNVEF0TkRneU5pMWlabUZpTFdFd1lqTm1NemMyTnpVMVpDSXNJbk4xWWlJNkluTjVjM1JsYlRwelpYSjJhV05sWVdOamIzVnVkRHBrYVdkcGRHRnNkSGRwYm5NNlkyOXVjMjlzWlMxellTSjkuU19NRUljUWotWllRdHBnTDM2Z25xQjg3YkFHNkRmSEtwQ1RUWUd5ZTdsN2FqeXB4bF9HUXhhM1h1SWRKd04tamZIOFhZUkR5WGEyMUoyUjhUVzh3clNCVnpUek9jZTFxZl9xNUdGcGxkd3J2ZjJjdU83RHkyWFQ0NVdqd3llTGNYQUVCdWYtdUJiNmVzNnJXNHNETXhVbjdfX3NPbEtmWDZVRnM4aDVVbzBMSm5zU2JfU0VaVjZhU19qSnV6MHE0Undrdk1PNzdCMnYzZ0x6d282V055QkFiUGxSSVlRdmJjMkhFSFRER1dMeXlaZHg5Z3BCa2ZXSEJOMHZFOFZFUGVkd2ZPUHhhT19hVkRrekk4M0hjWFFJRE5xaEo3X2owZkJwMDJxX0JqT2huejBSVHpfSU9vYVBISWxfVlJRb3YxaDVNcVBLYTNBazI4emZGQjQ0QWFB
+          - name: MINIO_URL
+            value: http://minio:9000
+          - name: MINIO_A_KEY
+            value: VAxIHWTIJyArsYVE8hqN
+          - name: MINIO_S_KEY
+            value: Ic6GunS8D5U5GnYxWZQH0wG89HoLFw3CzfGKHIYL
+          - name: POSTGRE_HOST
+            value: "192.168.218.3"
+          - name: POSTGRE_PORT
+            value: "35432"
+          - name: POSTGRE_DB
+            value: fmi-simulations-test
+          - name: POSTGRE_USER
+            value: postgres
+          - name: POSTGRE_PASSWORD
+            value: postgres
+          - name: BROKER_TYPE
+            value: mqtt
+          - name: BROKER_IP
+            value: mosquitto-fmi
+          - name: BROKER_PORT
+            value: "30510"
+          - name: BROKER_TOPIC
+            value: opentwins/fmi-simulations
+          - name: BROKER_USERNAME
+            value: user
+          - name: BROKER_PASSWORD
+            value: password
+          ports:
+            - containerPort: 8001
+          imagePullPolicy: Always

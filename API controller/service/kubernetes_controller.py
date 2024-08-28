@@ -237,7 +237,7 @@ class KubernetesControllerService:
         
         # SIMULATION SCHEMA CONNECTION THINGS
         SIMULATION_ENV_VAR.append({"name": "SIMULATION_FMUS", "value": json.dumps(schema["fmus"])})
-        SIMULATION_ENV_VAR.append({"name": "SIMULATION_FMUS_SCHEMA", "value": json.dumps(schema["schema"])})
+        SIMULATION_ENV_VAR.append({"name": "SIMULATION_FMUS_SCHEMA", "value": json.dumps(schema["schema"]) if "schema" in schema.keys() else None})
         
         
         if SIMULATION_SCHEDULE == "one-time":

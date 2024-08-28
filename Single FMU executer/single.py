@@ -35,40 +35,7 @@ def retrieve_data():
     print(type(inputs))
     print(inputs)
     
-    schema = {
-                "inputs":[
-                    {
-                        "id":"A",
-                        "fmu":"FMI1",
-                        "type": "influxdb",
-                        "query": """from(bucket: "EnergyForecasting") 
-                                    |> range(start: -30d)\n
-                                    |> filter(fn: (r) => r["_measurement"] == "delfos")\n
-                                    |> filter(fn: (r) => r["type"] == "forecast")\n
-                                    |> filter(fn: (r) => r["name"] == "BandaSecundaria")\n
-                                    |> filter(fn: (r) => r["scenario"] == "Escenario1")\n
-                                    |> last()"""
-                    },
-                    {
-                        "id":"B",
-                        "fmu":"FMI1",
-                        "type": "fixed",
-                        "value":"AAAAA"
-                    },
-                    {
-                        "id":"C",
-                        "fmu":"FMI1",
-                        "type": "default"
-                    }
-                ],
-                "outputs": [
-                    {
-                        "id":"A",
-                        "fmu":"FMI1"
-                    }
-                ]
-                }
-    # inputs = schema["inputs"]  #TODO: QUITAR CUANDO FUNCIONE EL SCHEMA
+    #inputs = schema["inputs"]  #TODO: QUITAR CUANDO FUNCIONE EL SCHEMA
     # outputs = schema["outputs"] #TODO: QUITAR CUANDO FUNCIONE EL SCHEMA
     
     
@@ -127,7 +94,7 @@ def run_simulation(data, fmu_path):
                           start_time=data["SIMULATION_START_TIME"], 
                           stop_time=data["SIMULATION_END_TIME"],
                           output_interval=data["SIMULATION_STEP_SIZE"],
-                          input = data["INPUTS"])
+                          input = data["INPUTS"] if data["INPUTS"] else None)
     
     
     header = list(result.dtype.names)

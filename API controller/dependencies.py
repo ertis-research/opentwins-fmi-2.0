@@ -2,14 +2,10 @@ from kubernetes import client, config
 import os
 from loguru import logger
 import boto3
-from dotenv import load_dotenv
-import psycopg2
 import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-
-load_dotenv()
 
 def get_sql_client():
     """ Get the SQL client from the environment variables

@@ -6,7 +6,6 @@ from fastapi import Depends, File
 from loguru import logger
 from dependencies import get_minio_resource
 from errors import FMUError
-import dotenv
 import tempfile
 import shutil
 import zipfile

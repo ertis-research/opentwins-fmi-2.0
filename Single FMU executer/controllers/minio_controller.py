@@ -40,8 +40,10 @@ class MinioControllerService:
         tries = 0
         while(tries < 3):
             try:
-                my_bucket = self.s3.Bucket(context)
-                response = my_bucket.download_file(fmu, 'FMUs/{}'.format(fmu))
+                download_path = 'FMUs/{}'.format(fmu)
+                print(download_path)
+                my_bucket = self.s3.Bucket(context)                
+                response = my_bucket.download_file(fmu, download_path)
                 #response = self.s3.meta.client.get_object(Bucket=context, Key=fmu)
                 #response = self.s3.download_file(context, fmu, 'FMUs/{}'.format(fmu))
                 return 'FMUs/{}'.format(fmu)
