@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ssd:SystemStructureDescription
+    xmlns:ssd="http://ssp-standard.org/SSP1/SystemStructureDescription"
+    xmlns:ssc="http://ssp-standard.org/SSP1/SystemStructureCommon"
+    version="1.0"
+    name="ControlledDrivetrain">
+    <ssd:System name="ControlledDrivetrain">
+        <ssd:Connectors>
+            <ssd:Connector name="w_ref" kind="input"/>
+            <ssd:Connector name="w" kind="output"/>
+        </ssd:Connectors>
+        <ssd:Elements>
+            <ssd:Component type="application/x-fmu-sharedlibrary" source="resources/Controller.fmu" name="controller">
+                <ssd:Connectors>
+                    <ssd:Connector name="u_s" kind="input"/>
+                    <ssd:Connector name="u_m" kind="input"/>
+                    <ssd:Connector name="y" kind="output"/>
+                </ssd:Connectors>
+            </ssd:Component>
+            <ssd:Component type="application/x-fmu-sharedlibrary" source="resources/Drivetrain.fmu" name="drivetrain">
+                <ssd:Connectors>
+                    <ssd:Connector name="tau" kind="input"/>
+                    <ssd:Connector name="w" kind="output"/>
+                </ssd:Connectors>
+            </ssd:Component>
+        </ssd:Elements>
+        <ssd:Connections>
+            <ssd:Connection startConnector="w_ref" endElement="controller" endConnector="u_s"/>
+            <ssd:Connection startElement="drivetrain" startConnector="w" endElement="controller" endConnector="u_m"/>
+            <ssd:Connection startElement="controller" startConnector="y" endElement="drivetrain" endConnector="tau"/>
+            <ssd:Connection startElement="drivetrain" startConnector="w" endConnector="w"/>
+        </ssd:Connections>
+    </ssd:System>
+    <ssd:DefaultExperiment stopTime="4"/>
+</ssd:SystemStructureDescription>
