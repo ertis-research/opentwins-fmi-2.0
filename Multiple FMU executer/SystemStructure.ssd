@@ -1,0 +1,36 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ssd:SimpleSystemDescription version="1.0" name="PruebaDriveTrain"
+    xmlns:ssd="http://ssp-standard.org/SSP1/SystemStructureDescription"
+    xmlns:ssc="http://ssp-standard.org/SSP1/SystemStructureCommon">
+    <ssd:System name="PruebaDriveTrain">
+        <ssd:Connectors>
+            <ssd:Connector name="alturitaS" kind="input" />
+            <ssd:Connector name="alturitaB" kind="output" />
+        </ssd:Connectors>
+        <ssd:Elements>
+            <ssd:Component type="application/x-fmu-sharedlibrary"
+                source="resources/bouncingball.fmu" name="bouncingball">
+                <ssd:Connectors>
+                    <ssd:Connector name="alturaSueloBB" kind="input" />
+                    <ssd:Connector name="alturaBolaBB" kind="output" />
+                </ssd:Connectors>
+            </ssd:Component>
+            <ssd:Component type="application/x-fmu-sharedlibrary" source="resources/suelo.fmu"
+                name="suelo">
+                <ssd:Connectors>
+                    <ssd:Connector name="alturaSueloInicial" kind="input" />
+                    <ssd:Connector name="alturaSueloS" kind="output" />
+                </ssd:Connectors>
+            </ssd:Component>
+        </ssd:Elements>
+        <ssd:Connections>
+            <ssd:Connection startConnector="alturitaS" endConnector="alturaSueloInicial"
+                endElement="suelo" />
+            <ssd:Connection startConnector="alturaSueloS" endConnector="alturaSueloBB"
+                startElement="suelo" endElement="bouncingball" />
+            <ssd:Connection startConnector="alturaBolaBB" endConnector="alturitaB"
+                startElement="bouncingball" />
+        </ssd:Connections>
+    </ssd:System>
+    <ssd:DefaultExperiment stopTime="4" />
+</ssd:SimpleSystemDescription>

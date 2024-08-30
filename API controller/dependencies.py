@@ -7,6 +7,10 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 def get_sql_client():
     """ Get the SQL client from the environment variables
         Return:

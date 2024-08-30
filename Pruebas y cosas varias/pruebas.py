@@ -1,40 +1,22 @@
-# import sqlalchemy
-# from sqlalchemy import text
-# import asyncio
-# from sqlalchemy import create_engine
-# from sqlalchemy.ext.declarative import declarative_base
-# from sqlalchemy.orm import sessionmaker
-# from loguru import logger
+""" This example demonstrates how to use the FMU.get*() and FMU.set*() functions
+ to set custom input and control the simulation """
 
-# context = "opentwins"
-# POSTGRE_HOST="postgrest.ertis.uma.es"
-# #POSTGRE_PORT=35432
-# POSTGRE_PORT=443
-# POSTGRE_DB="fmi-simulations-test"
-# POSTGRE_USER="postgres"
-# POSTGRE_PASSWORD="postgres"
-
-# connectionString = "postgresql+psycopg2://{}:{}@{}/{}".format( POSTGRE_USER, POSTGRE_PASSWORD, POSTGRE_HOST, POSTGRE_DB)
-# logger.info(connectionString)
-# engine = create_engine(connectionString)
-
-# query = "SELECT id, name FROM fmi_sim_schemmas"
-# variables = {}
-
-# if context is not None:
-#     query += " WHERE context = :context"
-#     variables = {"context":context}
-
-# schema_list = []
-
-# with engine.connect() as connection:
-#     result = connection.execute(text(query), variables)
-
-# for row in result:
-#     schema_list.append({"id":row[0], "name":row[1]})
+from fmpy import read_model_description, extract
+from fmpy.fmi2 import FMU2Slave
+from fmpy.util import plot_result, download_test_file
+import numpy as np
+import shutil
 
 
-pruebas = [1]
 
-if pruebas:
-    print("hola")
+# define the model name and simulation parameters
+fmu_filename = 'bouncingBall.fmu'
+
+# read the model description
+model_description = read_model_description(fmu_filename)
+
+print(model_description)
+
+for variable in model_description.modelVariables:
+    print(variable)
+    
