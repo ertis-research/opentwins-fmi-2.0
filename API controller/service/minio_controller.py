@@ -21,7 +21,7 @@ class MinioControllerService:
         
     def create_xml(self, system_name, inputs, outputs, fmus, graph, final_time):
         # Root element
-        root = ET.Element("ssd:SimpleSystemDescription", 
+        root = ET.Element("ssd:SystemStructureDescription", 
                         version="1.0",
                         name=system_name)
 
