@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-python3 single.py
+python3 multiple.py

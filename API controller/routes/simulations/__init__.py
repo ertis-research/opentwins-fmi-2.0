@@ -4,6 +4,7 @@ from routes.simulations.simulation_id import simulation_id
 from errors import DatabaseError, SimulationError
 from service.kubernetes_controller import KubernetesControllerService
 from service.sql_controller import SQLControllerService
+from service.minio_controller import MinioControllerService
 
 simulations = APIRouter(prefix='/simulations/{context}', tags=['simulations'])
 simulations.include_router(simulation_id)

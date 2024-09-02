@@ -23,6 +23,6 @@ async def create_simulation_schema(request: Request, context: str, sqlController
 
 
 @schemas.get('')
-async def get_simulation_schema_list(request: Request, context: str, sqlController: SQLControllerService = Depends(SQLControllerService), kubernetesService : KubernetesControllerService = Depends(KubernetesControllerService)):    
+async def get_simulation_schema_list(request: Request, context: str, sqlController: SQLControllerService = Depends(SQLControllerService)):    
     schema_list = await sqlController.get_simulation_schema_list(context)
     return JSONResponse(schema_list, 200)

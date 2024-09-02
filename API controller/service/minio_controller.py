@@ -101,6 +101,7 @@ class MinioControllerService:
                 return False
     
     def file_uploader(self, context, file):
+        logger.info("Uploading FMU")
         # The file to upload, change this path if needed
         # source_file = "/tmp/test-file.txt"
         tempDir = tempfile.mkdtemp()
@@ -231,6 +232,11 @@ class MinioControllerService:
                 
         raise FMUError("Failed to delete the file")
     
+    async def delete_fmu_graph(self, context, schema_id):
+        # List all object paths in bucket that begin with my-prefixname.
+        self.s3.meta.client.delete_object(Bucket=context, Key=schema_id+".ssd")
+        logger.info(f"successfully deleted {schema_id} from bucket {context}")
+    
     async def upload_fmu_graph(self, payload, context):
         system_inputs = []
         system_outputs = []
@@ -253,3 +259,4 @@ class MinioControllerService:
             logger.info(f"Created bucket {context}")
         
         self.s3.meta.client.upload_file(file_path, context, payload["id"]+".ssd")
+        

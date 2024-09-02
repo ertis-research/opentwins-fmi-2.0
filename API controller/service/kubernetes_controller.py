@@ -166,7 +166,7 @@ class KubernetesControllerService:
         SIMULATION_SCHEMA = executionInfo["schemaId"]
         SIMULATION_SCHEDULE = executionInfo["configuration"]["SIMULATION_TYPESCHEDULE"]
         
-        logger.info("Deploying simulation %s", SIMULATION_ID)
+        logger.info(f"Deploying simulation {SIMULATION_ID}")
 
         kind = self.check_if_exists(context, SIMULATION_ID)
         if kind:
@@ -180,6 +180,7 @@ class KubernetesControllerService:
         schema = schema[0]
         
         logger.info("Found schema, creating simulation %s", SIMULATION_ID)
+        
         
         SIMULATION_ENV_VAR = []
         
@@ -219,7 +220,7 @@ class KubernetesControllerService:
         SIMULATION_ENV_VAR.append({"name": "MINIO_S_KEY", "value": os.getenv('MINIO_S_KEY')})
         
             
-        # SIMULATION CONFIGURATION THINGS
+        # SIMULATION CONFIGURATION THINGS         
         if float(executionInfo["configuration"]["SIMULATION_END_TIME"]) < float(executionInfo["configuration"]["SIMULATION_START_TIME"]):
             raise SimulationError("End time is lower than start time")
         elif float(executionInfo["configuration"]["SIMULATION_END_TIME"]) - float(executionInfo["configuration"]["SIMULATION_START_TIME"]) < float(executionInfo["configuration"]["SIMULATION_STEP_SIZE"]):
@@ -237,7 +238,7 @@ class KubernetesControllerService:
         
         # SIMULATION SCHEMA CONNECTION THINGS
         SIMULATION_ENV_VAR.append({"name": "SIMULATION_FMUS", "value": json.dumps(schema["fmus"])})
-        SIMULATION_ENV_VAR.append({"name": "SIMULATION_FMUS_SCHEMA", "value": json.dumps(schema["schema"]) if "schema" in schema.keys() else None})
+        #SIMULATION_ENV_VAR.append({"name": "SIMULATION_FMUS_SCHEMA", "value": json.dumps(schema["schema"]) if "schema" in schema.keys() else None})
         
         
         if SIMULATION_SCHEDULE == "one-time":

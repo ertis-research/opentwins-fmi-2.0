@@ -16,6 +16,11 @@ class MinioControllerService:
         MINIO_URL = os.getenv('MINIO_URL')
         MINIO_A_KEY = os.getenv('MINIO_A_KEY')
         MINIO_S_KEY = os.getenv('MINIO_S_KEY')
+        
+        MINIO_URL="http://127.0.0.1:9000"
+        MINIO_A_KEY="VAxIHWTIJyArsYVE8hqN"
+        MINIO_S_KEY="Ic6GunS8D5U5GnYxWZQH0wG89HoLFw3CzfGKHIYL"
+
 
         self.s3 = boto3.resource('s3', 
                             aws_access_key_id=MINIO_A_KEY, 
@@ -35,20 +40,20 @@ class MinioControllerService:
             logger.info("Bucket %s does not exists", context)
             return False
 
-    def download_fmu(self, context, fmu):
+    def download_fmu(self, context, fmu_list):
         # Download FMU from MinIO
-        tries = 0
-        while(tries < 3):
-            try:
-                download_path = 'FMUs/{}'.format(fmu)
-                print(download_path)
-                my_bucket = self.s3.Bucket(context)                
-                response = my_bucket.download_file(fmu, download_path)
-                #response = self.s3.meta.client.get_object(Bucket=context, Key=fmu)
-                #response = self.s3.download_file(context, fmu, 'FMUs/{}'.format(fmu))
-                return 'FMUs/{}'.format(fmu)
-            except Exception as e:
-                logger.error(e)
-                logger.warning("Retrying to get the file")
-                tries +=1
-        raise FMUError("Failed to retrieve FMU")
+        
+        for fmu in fmu_list:
+            download_path = 'ssp_creation/resources/{}'.format(fmu)
+            my_bucket = self.s3.Bucket(context)                
+            response = my_bucket.download_file(fmu, download_path)
+            #response = self.s3.meta.client.get_object(Bucket=context, Key=fmu)
+            #response = self.s3.download_file(context, fmu, 'FMUs/{}'.format(fmu))
+        return True
+    
+    def download_simulation_ssd(self, context, ssdID):
+        # Download FMU from MinIO
+        download_path = 'ssp_creation/SystemStructure.ssd'
+        my_bucket = self.s3.Bucket(context)                
+        response = my_bucket.download_file(ssdID+".ssd", download_path)
+        return 'ssp_creation/SystemStructure.ssd'
