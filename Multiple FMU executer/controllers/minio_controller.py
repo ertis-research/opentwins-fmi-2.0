@@ -16,12 +16,7 @@ class MinioControllerService:
         MINIO_URL = os.getenv('MINIO_URL')
         MINIO_A_KEY = os.getenv('MINIO_A_KEY')
         MINIO_S_KEY = os.getenv('MINIO_S_KEY')
-        
-        MINIO_URL="http://127.0.0.1:9000"
-        MINIO_A_KEY="VAxIHWTIJyArsYVE8hqN"
-        MINIO_S_KEY="Ic6GunS8D5U5GnYxWZQH0wG89HoLFw3CzfGKHIYL"
-
-
+    
         self.s3 = boto3.resource('s3', 
                             aws_access_key_id=MINIO_A_KEY, 
                             aws_secret_access_key=MINIO_S_KEY, 
@@ -44,9 +39,10 @@ class MinioControllerService:
         # Download FMU from MinIO
         
         for fmu in fmu_list:
-            download_path = 'ssp_creation/resources/{}'.format(fmu)
+            logger.info(f"Downloading FMU {fmu}")
+            download_path = 'ssp_creation/resources/{}.fmu'.format(fmu)
             my_bucket = self.s3.Bucket(context)                
-            response = my_bucket.download_file(fmu, download_path)
+            my_bucket.download_file(fmu+".fmu", download_path)
             #response = self.s3.meta.client.get_object(Bucket=context, Key=fmu)
             #response = self.s3.download_file(context, fmu, 'FMUs/{}'.format(fmu))
         return True

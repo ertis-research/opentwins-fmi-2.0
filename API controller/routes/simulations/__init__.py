@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import JSONResponse
 from routes.simulations.simulation_id import simulation_id
-from errors import DatabaseError, SimulationError
+from errors import *
 from service.kubernetes_controller import KubernetesControllerService
 from service.sql_controller import SQLControllerService
 from service.minio_controller import MinioControllerService
@@ -12,9 +12,12 @@ simulations.include_router(simulation_id)
 
 @simulations.post('')
 async def deploy_simulation(request: Request, context: str, kubernetesService : KubernetesControllerService = Depends(KubernetesControllerService), sqlController: SQLControllerService = Depends(SQLControllerService)):    
-    payload = await request.json()
-    data = await kubernetesService.deploy_simulation(payload, context, sqlController)
-    return JSONResponse(data, 200)
+    try:
+        payload = await request.json()
+        data = await kubernetesService.deploy_simulation(payload, context, sqlController)
+        return JSONResponse(data, 200)
+    except SimulationAlreadyExistsError as e:
+        return JSONResponse("Simulation already exists", 409)
 
 
 

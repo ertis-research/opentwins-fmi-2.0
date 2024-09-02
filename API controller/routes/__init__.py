@@ -15,4 +15,3 @@ try:
 
 except asyncpg.exceptions.UniqueViolationError as e:
     logger.error(e)
-    

@@ -170,7 +170,7 @@ class KubernetesControllerService:
 
         kind = self.check_if_exists(context, SIMULATION_ID)
         if kind:
-            raise SimulationError("There is a simulation with that characteristics")
+            raise SimulationAlreadyExistsError("There is a simulation with that characteristics")
         
         logger.info("There is not any simulation with that characteristics")
         

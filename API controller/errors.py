@@ -10,6 +10,8 @@ class SimulationError(Exception):
     pass
 class DeleteSimulationError(SimulationError):
     pass
+class SimulationAlreadyExistsError(SimulationError):
+    pass
 
 class DatabaseError(Exception):
     pass

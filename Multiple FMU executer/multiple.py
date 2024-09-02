@@ -18,35 +18,6 @@ from controllers.minio_controller import MinioControllerService
 from controllers.message_broker_controller import MessageBrokerController
 from controllers.influxdb_controller import InfluxDBController
 
-INPUTS_GLOBAL = [{
-         "id":"A",
-         "fmu":"FMI1",
-         "type": "influxdb",
-         "query":"AAAAA"
-      },
-      {
-         "id":"B",
-         "fmu":"FMI1",
-         "type": "fixed",
-         "value":"AAAAA"
-      },
-      {
-         "id":"C",
-         "fmu":"FMI1",
-         "type": "default"
-      },
-      {
-         "id":"A",
-         "fmu":"FMI2",
-         "type": "influxdb",
-         "query":"AAAAA"
-      },
-      {
-         "id":"B",
-         "fmu":"FMI3",
-         "type": "fixed",
-         "value":"AAAAA"
-      }]
 
 def get_variable_from_influxdb(influxController, query):
     return influxController.get_variable(query)
@@ -70,7 +41,7 @@ def retrieve_data():
     for input in inputs:
         
         if input["type"] == "influxdb":
-            start_value = get_variable_from_influxdb("influxController", input["query"])
+            start_value = get_variable_from_influxdb(influxController, input["query"])
         elif input["type"] == "mqtt":
             start_value = get_variable_from_mqtt(input["topic"], input["mapper"]) # Not implemented yet
         elif input["type"] == "fixed":
@@ -164,6 +135,8 @@ def create_ssp(simulation_id):
 
 
 if __name__ == "__main__":
+    os.mkdir("ssp_creation") 
+    os.mkdir("ssp_creation/resources")
     ##################################
     # Retrieving environment variables
     ##################################
