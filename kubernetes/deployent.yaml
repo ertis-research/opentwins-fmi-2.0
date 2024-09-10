@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    name: opentwins-fmi-api
+  name: opentwins-fmi-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: pod-opentwins-fmi-api
+  template:
+    metadata:
+      labels:
+        name: pod-opentwins-fmi-api
+      name: opentwins-fmi-api
+    spec:
+      serviceAccountName: ot-agents
+      automountServiceAccountToken: true
+      containers:
+        - image: registry.ertis.uma.es/opentwins-fmi-simulator-api-v2:latest
+          name: opentwins-fmi-api
+          env:
+          - name: KUBE_NAMESPACE
+            value: 
+          - name: INSIDE_CLUSTER
+            value: 
+          - name: INFLUXDB_HOST
+            value: 
+          - name: INFLUXDB_TOKEN
+            value: 
+          - name: INFLUXDB_DB
+            value: 
+          - name: MINIO_TOKEN
+            value: 
+          - name: MINIO_URL
+            value: 
+          - name: MINIO_A_KEY
+            value: 
+          - name: MINIO_S_KEY
+            value: 
+          - name: POSTGRE_HOST
+            value: 
+          - name: POSTGRE_PORT
+            value: 
+          - name: POSTGRE_DB
+            value: 
+          - name: POSTGRE_USER
+            value: 
+          - name: POSTGRE_PASSWORD
+            value: 
+          - name: BROKER_TYPE
+            value: 
+          - name: BROKER_IP
+            value: 
+          - name: BROKER_PORT
+            value: 
+          - name: BROKER_TOPIC
+            value: 
+          - name: BROKER_USERNAME
+            value: 
+          - name: BROKER_PASSWORD
+            value: 
+          ports:
+            - containerPort: 8001
+          imagePullPolicy: Always
