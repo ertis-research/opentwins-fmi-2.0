@@ -191,9 +191,11 @@ class KubernetesControllerService:
         
         # TARGER CONNECTION THINGS
         if "targetConnection" in executionInfo.keys():
+            logger.info("Target connection found")
             for variable in executionInfo["targetConnection"]:
                 SIMULATION_ENV_VAR.append({"name": variable, "value": executionInfo["targetConnection"][variable]})
         else:
+            logger.info("Target connection not found, using default")
             SIMULATION_ENV_VAR.append({"name": "BROKER_TYPE", "value": os.getenv('BROKER_TYPE')})
             SIMULATION_ENV_VAR.append({"name": "BROKER_IP", "value": os.getenv('BROKER_IP')})
             SIMULATION_ENV_VAR.append({"name": "BROKER_PORT", "value": os.getenv('BROKER_PORT')})
@@ -250,6 +252,7 @@ class KubernetesControllerService:
                     'labels': {}
                 },
                 "spec": {
+                    "ttlSecondsAfterFinished": 60,
                     "template": {
                         "metadata":{
                             'labels': {}
