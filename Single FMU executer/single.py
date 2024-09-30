@@ -145,6 +145,10 @@ if __name__ == "__main__":
     simulation_results = run_simulation(retrieved_data, fmu_path)
     logger.info("Simulation finished")
 
+    print("########################## Simulation results ##########################")
+    print(simulation_results.head())
+    print("##########################################################################")
+
     # Send the results to the broker
     logger.info("Sending results to broker")
     send_results_to_broker(simulation_results)

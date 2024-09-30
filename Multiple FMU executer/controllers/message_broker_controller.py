@@ -13,7 +13,8 @@ class MessageBrokerController:
         
         # Create a client instance 
         self.client = mqtt_client.Client(mqtt_client.CallbackAPIVersion.VERSION1, "fmi-simulator-"+os.getenv('SIMULATION_ID'))
-        self.client.username_pw_set(username=self.BROKER_USERNAME, password=self.BROKER_PASSWORD)
+        if self.BROKER_USERNAME != None and self.BROKER_PASSWORD != None:
+            self.client.username_pw_set(username=self.BROKER_USERNAME, password=self.BROKER_PASSWORD)
         self.client.connect(self.BROKER_IP, self.BROKER_PORT)
 
     def send_message(self, messages):
