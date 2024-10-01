@@ -198,10 +198,11 @@ class KubernetesControllerService:
             logger.info("Target connection not found, using default")
             SIMULATION_ENV_VAR.append({"name": "BROKER_TYPE", "value": os.getenv('BROKER_TYPE')})
             SIMULATION_ENV_VAR.append({"name": "BROKER_IP", "value": os.getenv('BROKER_IP')})
-            SIMULATION_ENV_VAR.append({"name": "BROKER_PORT", "value": os.getenv('BROKER_PORT')})
             SIMULATION_ENV_VAR.append({"name": "BROKER_TOPIC", "value": os.getenv('BROKER_TOPIC')})
             SIMULATION_ENV_VAR.append({"name": "BROKER_USERNAME", "value": os.getenv('BROKER_USERNAME')})
             SIMULATION_ENV_VAR.append({"name": "BROKER_PASSWORD", "value": os.getenv('BROKER_PASSWORD')})
+            if os.getenv('BROKER_PORT') is not None:
+                SIMULATION_ENV_VAR.append({"name": "BROKER_PORT", "value": os.getenv('BROKER_PORT')})
             
         # INFLUXDB THINGS
         SIMULATION_ENV_VAR.append({"name": "INFLUXDB_HOST", "value": os.getenv('INFLUXDB_HOST')})
