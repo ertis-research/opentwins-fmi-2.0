@@ -109,7 +109,7 @@ def run_simulation(data, ssp_path):
     
 def send_results_to_broker(results):
     broker_controller = MessageBrokerController()
-    #results = results.transpose()
+    results = results.transpose()
     
     for index, row in results.iterrows():
         result = row.to_dict()
