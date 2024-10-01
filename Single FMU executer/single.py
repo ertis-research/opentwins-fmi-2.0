@@ -74,7 +74,7 @@ def retrieve_data():
             "SIMULATION_STEP_SIZE"    : float(os.getenv('SIMULATION_STEP_SIZE')),
 
             "SIMULATION_DELAY_WARNING"    : float(os.getenv('SIMULATION_DELAY_WARNING')),
-            "SIMULATION_LAST_VALUE"       : bool(os.getenv('SIMULATION_LAST_VALUE')),
+            "SIMULATION_LAST_VALUE"       : True if os.getenv('SIMULATION_LAST_VALUE') is not None and os.getenv('SIMULATION_LAST_VALUE') == "True" else False,
             
             "INPUTS"     : start_values,
             "OUTPUTS"    : outputs,
@@ -108,7 +108,7 @@ def run_simulation(data, fmu_path):
     
 def send_results_to_broker(results):
     broker_controller = MessageBrokerController()
-    results = results.transpose()
+    #results = results.transpose()
     
     for index, row in results.iterrows():
         result = row.to_dict()
