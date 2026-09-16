@@ -12,7 +12,7 @@ from pathlib import Path
 from fmpy import simulate_fmu
 from utils.simulation import simulate_ssp
 from fmpy.simulation import _get_output_variables
-from utils.ssd import read_ssd, read_ssd_from_ssp, Parameter, ParameterSet
+from utils.ssd import read_ssd, read_ssd_from_ssp
 from fmpy.util import download_test_file, download_file
 from controllers.minio_controller import MinioControllerService
 from controllers.message_broker_controller import MessageBrokerController
@@ -82,20 +82,18 @@ def retrieve_data():
     return retrieved_data
 
 def run_simulation(data, ssp_path):
-    # The values retrieved for "INPUTS" (from InfluxDB, MQTT or a fixed value in the request) are initial
-    # values for FMU variables, not a continuously-varying signal, so they are applied as start values/
-    # parameters to each component before the simulation starts. Ids are expected as "<fmuId>.<variableId>"
-    # to identify which FMU each value belongs to, matching the dotted paths used elsewhere in ssd.py.
-    parameter_set = ParameterSet(
-        name="simulation-inputs",
-        parameters=[Parameter(name=variable_id, value=value) for variable_id, value in data["INPUTS"].items()]
-    ) if data["INPUTS"] else None
+    # "INPUTS" holds one value per system-level input connector (its id matches the connector's name in
+    # the SSD, i.e. the "var" of a schema connection whose "from" end has no "id" - see the API's
+    # create_xml()). The value is retrieved once (InfluxDB/MQTT/fixed) and held constant for the whole
+    # run, so it's wrapped as a constant function of time to reuse simulate_ssp's input mechanism, which
+    # expects input[connector_name] to be callable as input[connector_name](time).
+    constant_inputs = {name: (lambda value: (lambda time: value))(value) for name, value in data["INPUTS"].items()}
 
     result = simulate_ssp(ssp_path,
                           stop_time=data["SIMULATION_END_TIME"],
                           start_time=data["SIMULATION_START_TIME"],
                           step_size=data["SIMULATION_STEP_SIZE"],
-                          parameter_set=parameter_set)
+                          input=constant_inputs)
 
     ssd = read_ssd(ssp_path)
         
