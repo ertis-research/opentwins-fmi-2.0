@@ -74,7 +74,7 @@ def retrieve_data():
             "SIMULATION_STEP_SIZE"    : float(os.getenv('SIMULATION_STEP_SIZE')),
 
             "SIMULATION_DELAY_WARNING"    : float(os.getenv('SIMULATION_DELAY_WARNING')),
-            "SIMULATION_LAST_VALUE"       : bool(os.getenv('SIMULATION_LAST_VALUE')),
+            "SIMULATION_LAST_VALUE"       : True if os.getenv('SIMULATION_LAST_VALUE') is not None and os.getenv('SIMULATION_LAST_VALUE') == "True" else False,
             
             "INPUTS"     : start_values,
             "OUTPUTS"    : outputs,
@@ -144,6 +144,10 @@ if __name__ == "__main__":
     logger.info("Running simulation")
     simulation_results = run_simulation(retrieved_data, fmu_path)
     logger.info("Simulation finished")
+
+    print("########################## Simulation results ##########################")
+    print(simulation_results.head())
+    print("##########################################################################")
 
     # Send the results to the broker
     logger.info("Sending results to broker")
