@@ -3,3 +3,6 @@ class FMUError(Exception):
 
 class SimulationError(Exception):
     pass
+
+class MQTTInputError(SimulationError):
+    pass

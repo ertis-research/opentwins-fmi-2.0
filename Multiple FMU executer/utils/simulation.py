@@ -36,8 +36,11 @@ def set_value(component, name, value):
     elif variable.type in ['Integer', 'Enumeration']:
         component.fmu.setInteger(vr, [int(value)])
     elif variable.type == 'Boolean':
-        # TODO: convert literals
-        component.fmu.setBoolean(vr, [value != 0.0])
+        if isinstance(value, str):
+            bool_value = value.strip().lower() in ('true', '1')
+        else:
+            bool_value = bool(value)
+        component.fmu.setBoolean(vr, [bool_value])
     else:
         raise Exception("Unsupported type: %s" % variable.type)
 
@@ -64,9 +67,10 @@ def set_parameters(component, parameter_set):
         parent = parent.parent
 
     for parameter in parameter_set.parameters:
-        if parameter.name.startswith(path):
+        if parameter.name.startswith(path + '.'):
             variable_name = parameter.name[len(path) + 1:]
-            set_value(component, variable_name, parameter.value)
+            if variable_name in component.variables:
+                set_value(component, variable_name, parameter.value)
 
 
 def instantiate_fmu(component, ssp_unzipdir, start_time, stop_time=None, parameter_set=None):

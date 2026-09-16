@@ -1,9 +1,3 @@
-import os
-import sys
-
-sys.path.insert(1, 'c:/Users/SergioI/Proyectos/FMI/opentwins-fmi-2.0/utils')
-sys.path.insert(1, 'c:/Users/SergioI/Proyectos/FMI/opentwins-fmi-2.0/service')
-
 from loguru import logger
 from errors import FMUError
 

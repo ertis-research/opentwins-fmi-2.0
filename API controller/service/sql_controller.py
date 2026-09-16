@@ -2,7 +2,7 @@
 from loguru import logger
 from fastapi import Depends
 from dependencies import get_sql_client
-from errors import SimulationError, DatabaseError
+from errors import SimulationError, DatabaseError, SchemaNotFoundError
 from fastapi.encoders import jsonable_encoder
 import sqlalchemy
 from sqlalchemy import text
@@ -50,26 +50,30 @@ class SQLControllerService:
         print(result)
          
     async def get_simulation_schema(self, context, schema_id):
-        query = "SELECT sim_schemme FROM fmi_sim_schemmas WHERE id = :id and context = :context".format(schema_id, context)
+        query = "SELECT sim_schemme FROM fmi_sim_schemmas WHERE id = :id and context = :context"
         try:
             async with self.engine.connect() as connection:
                 result = await connection.execute(text(query), {"context":context, "id":schema_id})
         except Exception as e:
-            raise DatabaseError("No controlo aun en get simulation schema")
-        
-        schema_list = []            
+            raise DatabaseError("Failed to retrieve simulation schema")
+
+        schema_list = []
         for row in result:
             schema_list.append(row[0])
-            
+
+        if not schema_list:
+            raise SchemaNotFoundError(f"Schema {schema_id} not found")
+
         return schema_list
-    
+
     async def delete_simulation_schema(self, context, schema_id):
-        query = "DELETE FROM fmi_sim_schemmas WHERE id = :id and context = :context".format(schema_id, context)
+        query = "DELETE FROM fmi_sim_schemmas WHERE id = :id and context = :context"
         try:
             async with self.engine.connect() as connection:
                 result = await connection.execute(text(query), {"context":context, "id":schema_id})
                 await connection.commit()
         except Exception as e:
-            raise DatabaseError("Error que no controlo aun")
-        
-        print(result)
+            raise DatabaseError("Failed to delete simulation schema")
+
+        if result.rowcount == 0:
+            raise SchemaNotFoundError(f"Schema {schema_id} not found")

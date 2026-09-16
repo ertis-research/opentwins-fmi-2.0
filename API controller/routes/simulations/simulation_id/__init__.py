@@ -22,11 +22,11 @@ async def delete_simulation(request: Request, context: str, simulation_id: str, 
 
 @simulation_id.post('/pause')
 async def stop_agent(request: Request, context :str, simulation_id: str, kubernetesController: KubernetesControllerService = Depends(KubernetesControllerService)):
-    kubernetesController.stop_resume_simulation(context, simulation_id, nreplicas = 0)
-    return JSONResponse(200)
+    await kubernetesController.stop_resume_simulation(context, simulation_id, nreplicas = 0)
+    return JSONResponse("Simulation paused", 200)
 
-    
+
 @simulation_id.post('/resume')
 async def resume_agent(request: Request, context :str, simulation_id: str, kubernetesController: KubernetesControllerService = Depends(KubernetesControllerService)):
-    kubernetesController.stop_resume_simulation(context, simulation_id, nreplicas = 1)
-    return JSONResponse(200)
+    await kubernetesController.stop_resume_simulation(context, simulation_id, nreplicas = 1)
+    return JSONResponse("Simulation resumed", 200)

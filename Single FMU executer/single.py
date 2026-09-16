@@ -18,8 +18,8 @@ from loguru import logger
 def get_variable_from_influxdb(influxController, query):
     return influxController.get_variable(query)
 
-def get_variable_from_mqtt(topic, mapper):
-    pass
+def get_variable_from_mqtt(brokerController, topic, mapper):
+    return brokerController.get_variable(topic, mapper)
 
 
 def retrieve_data():
@@ -31,36 +31,32 @@ def retrieve_data():
     
     inputs = json.loads(os.getenv('SIMULATION_INPUTS'))
     outputs = json.loads(os.getenv('SIMULATION_OUTPUTS'))
-    
+
     print(type(inputs))
     print(inputs)
-    
-    #inputs = schema["inputs"]  #TODO: QUITAR CUANDO FUNCIONE EL SCHEMA
-    # outputs = schema["outputs"] #TODO: QUITAR CUANDO FUNCIONE EL SCHEMA
-    
-    
+
     influxController = InfluxDBController()
-    
+    mqttController = None  # Only connected lazily, if an mqtt input is actually requested
+
     for input in inputs:
-        
+
         if input["type"] == "influxdb":
             start_value = get_variable_from_influxdb(influxController, input["query"])
         elif input["type"] == "mqtt":
-            start_value = get_variable_from_mqtt(input["topic"], input["mapper"]) # Not implemented yet
+            if mqttController is None:
+                mqttController = MessageBrokerController()
+            start_value = get_variable_from_mqtt(mqttController, input["topic"], input["mapper"])
         elif input["type"] == "fixed":
             start_value = input["value"]
         elif input["type"] == "default":
             continue
         else:
             raise Exception("Input type not recognized")
-        
+
         start_values[input["id"]] = start_value
-        
+
     outputs = [variable["id"] for variable in outputs]
-                            
-    # start_values = None # TODO: Remove this line when the schema is ready
-    # outputs = None # TODO: Remove this line when the schema is ready
-    
+
     retrieved_data = {
             # General information
             "SIMULATION_NAME" : os.getenv('SIMULATION_NAME'),
@@ -85,16 +81,15 @@ def retrieve_data():
     return retrieved_data
 
 def run_simulation(data, fmu_path):
-    # def __new__(subtype, shape, dtype=float, buffer=None, offset=0, strides=None, order=None, modelDescription=None):
-    #     obj = super(SimulationResult, subtype).__new__(subtype, shape, dtype, buffer, offset, strides, order)
-    #     obj.modelDescription = modelDescription
-    #     return obj
-
-    result = simulate_fmu(fmu_path, 
-                          start_time=data["SIMULATION_START_TIME"], 
+    # NOTE: "INPUTS" holds the initial/fixed values retrieved for the FMU variables (from InfluxDB, MQTT
+    # or a fixed value in the request). Those are start values applied before the simulation starts, not
+    # a continuously-varying signal, so they must be passed as start_values and not as the "input" time
+    # series fmpy expects.
+    result = simulate_fmu(fmu_path,
+                          start_time=data["SIMULATION_START_TIME"],
                           stop_time=data["SIMULATION_END_TIME"],
                           output_interval=data["SIMULATION_STEP_SIZE"],
-                          input = data["INPUTS"] if data["INPUTS"] else None)
+                          start_values=data["INPUTS"] if data["INPUTS"] else None)
     
     
     header = list(result.dtype.names)

@@ -12,7 +12,7 @@ from pathlib import Path
 from fmpy import simulate_fmu
 from utils.simulation import simulate_ssp
 from fmpy.simulation import _get_output_variables
-from utils.ssd import read_ssd, read_ssd_from_ssp
+from utils.ssd import read_ssd, read_ssd_from_ssp, Parameter, ParameterSet
 from fmpy.util import download_test_file, download_file
 from controllers.minio_controller import MinioControllerService
 from controllers.message_broker_controller import MessageBrokerController
@@ -22,8 +22,8 @@ from controllers.influxdb_controller import InfluxDBController
 def get_variable_from_influxdb(influxController, query):
     return influxController.get_variable(query)
 
-def get_variable_from_mqtt(topic, mapper):
-    raise Exception("Not implemented yet")
+def get_variable_from_mqtt(brokerController, topic, mapper):
+    return brokerController.get_variable(topic, mapper)
 
 
 def retrieve_data():
@@ -35,30 +35,29 @@ def retrieve_data():
     
     inputs = json.loads(os.getenv('SIMULATION_INPUTS'))
     outputs = json.loads(os.getenv('SIMULATION_OUTPUTS'))
- 
+
     influxController = InfluxDBController()
-    
+    mqttController = None  # Only connected lazily, if an mqtt input is actually requested
+
     for input in inputs:
-        
+
         if input["type"] == "influxdb":
             start_value = get_variable_from_influxdb(influxController, input["query"])
         elif input["type"] == "mqtt":
-            start_value = get_variable_from_mqtt(input["topic"], input["mapper"]) # Not implemented yet
+            if mqttController is None:
+                mqttController = MessageBrokerController()
+            start_value = get_variable_from_mqtt(mqttController, input["topic"], input["mapper"])
         elif input["type"] == "fixed":
             start_value = input["value"]
         elif input["type"] == "default":
             continue
         else:
             raise Exception("Input type not recognized")
-        
+
         start_values[input["id"]] = start_value
-        
+
     outputs = [variable["id"] for variable in outputs]
 
-      
-    # start_values = None # TODO: Remove this line when the schema is ready
-    # outputs = None # TODO: Remove this line when the schema is ready
-    
     retrieved_data = {
             # General information
             "SIMULATION_NAME" : os.getenv('SIMULATION_NAME'),
@@ -72,7 +71,7 @@ def retrieve_data():
             "SIMULATION_STEP_SIZE"    : float(os.getenv('SIMULATION_STEP_SIZE')),
 
             "SIMULATION_DELAY_WARNING"    : float(os.getenv('SIMULATION_DELAY_WARNING')),
-            "SIMULATION_LAST_VALUE"       : bool(os.getenv('SIMULATION_LAST_VALUE')),
+            "SIMULATION_LAST_VALUE"       : True if os.getenv('SIMULATION_LAST_VALUE') is not None and os.getenv('SIMULATION_LAST_VALUE') == "True" else False,
             
             "INPUTS"     : start_values,
             "OUTPUTS"    : outputs,
@@ -83,13 +82,21 @@ def retrieve_data():
     return retrieved_data
 
 def run_simulation(data, ssp_path):
-    result = simulate_ssp(ssp_path, 
+    # The values retrieved for "INPUTS" (from InfluxDB, MQTT or a fixed value in the request) are initial
+    # values for FMU variables, not a continuously-varying signal, so they are applied as start values/
+    # parameters to each component before the simulation starts. Ids are expected as "<fmuId>.<variableId>"
+    # to identify which FMU each value belongs to, matching the dotted paths used elsewhere in ssd.py.
+    parameter_set = ParameterSet(
+        name="simulation-inputs",
+        parameters=[Parameter(name=variable_id, value=value) for variable_id, value in data["INPUTS"].items()]
+    ) if data["INPUTS"] else None
+
+    result = simulate_ssp(ssp_path,
                           stop_time=data["SIMULATION_END_TIME"],
                           start_time=data["SIMULATION_START_TIME"],
                           step_size=data["SIMULATION_STEP_SIZE"],
-                          input=data["INPUTS"])
-    # TODO: Es posible que los inputs sean concretamente las entradas, por lo que otras variables sean simplemente parámetros. Eso hay que controlarlo.
-    
+                          parameter_set=parameter_set)
+
     ssd = read_ssd(ssp_path)
         
     names = []

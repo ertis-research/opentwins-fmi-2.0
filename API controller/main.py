@@ -1,7 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
-from errors import DatabaseError
+from fastapi.responses import JSONResponse
+from errors import DatabaseError, SchemaNotFoundError, SimulationError, SimulationAlreadyExistsError, DeleteSimulationError, FMUError
 from routes import BaseRouter
 
 
@@ -12,8 +13,35 @@ app = FastAPI()
 app.include_router(BaseRouter)
 
 
-#TODO: Poner aqui todos los errores. El altair es el mas meho
-# Mirar también el heredar de HTTPException
+# Centralized error handling: any of these exceptions raised from a route/service is turned into a
+# proper JSON response instead of propagating as an unhandled 500. Handlers for the more specific
+# exceptions are registered so they take precedence over their base class (e.g. SchemaNotFoundError
+# over DatabaseError, SimulationAlreadyExistsError over SimulationError).
+
+@app.exception_handler(SchemaNotFoundError)
+async def schema_not_found_handler(request: Request, exc: SchemaNotFoundError):
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+@app.exception_handler(SimulationAlreadyExistsError)
+async def simulation_already_exists_handler(request: Request, exc: SimulationAlreadyExistsError):
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+@app.exception_handler(DeleteSimulationError)
+async def delete_simulation_error_handler(request: Request, exc: DeleteSimulationError):
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+@app.exception_handler(SimulationError)
+async def simulation_error_handler(request: Request, exc: SimulationError):
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+@app.exception_handler(DatabaseError)
+async def database_error_handler(request: Request, exc: DatabaseError):
+    return JSONResponse(status_code=500, content={"detail": str(exc)})
+
+@app.exception_handler(FMUError)
+async def fmu_error_handler(request: Request, exc: FMUError):
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
+
 
 def custom_openapi():
     if app.openapi_schema:

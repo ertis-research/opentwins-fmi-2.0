@@ -18,11 +18,11 @@ class InfluxDBController:
         tables = query_api.query(query)
         
         result = json.loads(tables.to_json())
-        
-        print(result[0])
-        
-        if not (len(result) > 1 or len(result)) < 1:
-            return result[0]["_value"]
-        else:
+
+        if len(result) == 0:
+            raise Exception("Query returned no values")
+        elif len(result) > 1:
             raise Exception("Query returned multiple values")
+
+        return result[0]["_value"]
         

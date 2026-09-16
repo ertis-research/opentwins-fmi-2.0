@@ -11,13 +11,10 @@ simulations.include_router(simulation_id)
 
 
 @simulations.post('')
-async def deploy_simulation(request: Request, context: str, kubernetesService : KubernetesControllerService = Depends(KubernetesControllerService), sqlController: SQLControllerService = Depends(SQLControllerService)):    
-    try:
-        payload = await request.json()
-        data = await kubernetesService.deploy_simulation(payload, context, sqlController)
-        return JSONResponse(data, 200)
-    except SimulationAlreadyExistsError as e:
-        return JSONResponse("Simulation already exists", 409)
+async def deploy_simulation(request: Request, context: str, kubernetesService : KubernetesControllerService = Depends(KubernetesControllerService), sqlController: SQLControllerService = Depends(SQLControllerService)):
+    payload = await request.json()
+    data = await kubernetesService.deploy_simulation(payload, context, sqlController)
+    return JSONResponse(data, 200)
 
 
 
