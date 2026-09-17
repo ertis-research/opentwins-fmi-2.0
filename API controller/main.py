@@ -2,7 +2,9 @@ from fastapi import FastAPI, Request
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 from errors import DatabaseError, SchemaNotFoundError, SimulationError, SimulationAlreadyExistsError, DeleteSimulationError, FMUError
+from dependencies import get_sql_client
 from routes import BaseRouter
 
 
@@ -11,6 +13,24 @@ __name__ = "0.1.0"
 
 app = FastAPI()
 app.include_router(BaseRouter)
+
+
+@app.on_event("startup")
+async def create_schema_table():
+    """ Create the (SQLite-backed) table that stores simulation schemas if it doesn't exist yet -
+        there's no separate migration step to run before deploying the API. """
+    engine = get_sql_client()
+    async with engine.begin() as connection:
+        await connection.execute(text("""
+            CREATE TABLE IF NOT EXISTS fmi_sim_schemmas (
+                id          VARCHAR NOT NULL,
+                context     VARCHAR NOT NULL,
+                name        VARCHAR,
+                sim_schemme TEXT,
+                PRIMARY KEY (id, context)
+            )
+        """))
+    await engine.dispose()
 
 
 @app.get("/", tags=["Health"])

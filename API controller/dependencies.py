@@ -12,31 +12,17 @@ from sqlalchemy.orm import sessionmaker
 # load_dotenv()
 
 def get_sql_client():
-    """ Get the SQL client from the environment variables
+    """ Get the SQL client for the API's own embedded SQLite database (stores the simulation
+        schemas, see service/sql_controller.py). The file lives at SQLITE_DB_PATH, or
+        "fmi_schemas.db" in the working directory if not set.
         Return:
-            str: connection_string
+            AsyncEngine
     """
-    if os.getenv('POSTGRE_PORT') is not None:
-        connectionString = "postgresql+asyncpg://{}:{}@{}:{}/{}".format( os.getenv('POSTGRE_USER'), os.getenv('POSTGRE_PASSWORD'), os.getenv('POSTGRE_HOST'), os.getenv('POSTGRE_PORT'), os.getenv('POSTGRE_DB'))
-    else:
-        connectionString = "postgresql+asyncpg://{}:{}@{}/{}".format( os.getenv('POSTGRE_USER'), os.getenv('POSTGRE_PASSWORD'), os.getenv('POSTGRE_HOST'), os.getenv('POSTGRE_DB'))
-    logger.info(connectionString)
+    db_path = os.getenv('SQLITE_DB_PATH', 'fmi_schemas.db')
+    connectionString = "sqlite+aiosqlite:///{}".format(db_path)
     engine = create_async_engine(connectionString)
 
     return engine
-    
-# def get_postgre_client():
-#     """ Get the PostgreSQL client from the environment variables
-#         Return:
-#             str: connection_string
-#     """
-#     connectionString = "host={} dbname={} user={} password={} port={} async=1".format( os.getenv('POSTGRE_HOST'), os.getenv('POSTGRE_DB'), os.getenv('POSTGRE_USER'), os.getenv('POSTGRE_PASSWORD'), os.getenv('POSTGRE_PORT'))
-#     #connectionString = "host='{}' dbname = '{}' user = '{}' password = '{}' port = '{}'".format( os.getenv('POSTGRE_HOST'), os.getenv('POSTGRE_DB'), os.getenv('POSTGRE_USER'), os.getenv('POSTGRE_PASSWORD'), os.getenv('POSTGRE_PORT'))
-#     logger.info(connectionString)
-#     #conn = psycopg2.connect(connectionString)
-#     conn = psycopg2.connect(host=os.getenv('POSTGRE_HOST'), dbname=os.getenv('POSTGRE_DB'), user=os.getenv('POSTGRE_USER'), password=os.getenv('POSTGRE_PASSWORD'), port=os.getenv('POSTGRE_PORT'), async_=1)
-    
-#     return conn
 
 def get_minio_resource():
     MINIO_URL = os.getenv('MINIO_URL')

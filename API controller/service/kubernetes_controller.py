@@ -208,14 +208,7 @@ class KubernetesControllerService:
         SIMULATION_ENV_VAR.append({"name": "INFLUXDB_HOST", "value": os.getenv('INFLUXDB_HOST')})
         SIMULATION_ENV_VAR.append({"name": "INFLUXDB_TOKEN", "value": os.getenv('INFLUXDB_TOKEN')})
         SIMULATION_ENV_VAR.append({"name": "INFLUXDB_DB", "value": os.getenv('INFLUXDB_DB')})
-        
-        # POSTGRE THINGS
-        SIMULATION_ENV_VAR.append({"name": "POSTGRE_HOST", "value": os.getenv('POSTGRE_HOST')})
-        SIMULATION_ENV_VAR.append({"name": "POSTGRE_PORT", "value": os.getenv('POSTGRE_PORT')})
-        SIMULATION_ENV_VAR.append({"name": "POSTGRE_DB", "value": os.getenv('POSTGRE_DB')})
-        SIMULATION_ENV_VAR.append({"name": "POSTGRE_USER", "value": os.getenv('POSTGRE_USER')})
-        SIMULATION_ENV_VAR.append({"name": "POSTGRE_PASSWORD", "value": os.getenv('POSTGRE_PASSWORD')})
-            
+
         # MINIO THINGS
         SIMULATION_ENV_VAR.append({"name": "MINIO_TOKEN", "value": os.getenv('MINIO_TOKEN')})
         SIMULATION_ENV_VAR.append({"name": "MINIO_URL", "value": os.getenv('MINIO_URL')})

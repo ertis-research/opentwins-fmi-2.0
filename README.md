@@ -34,10 +34,11 @@ La API nunca ejecuta la simulación ella misma: al desplegar una simulación cre
 Servicios externos de los que depende el sistema:
 
 - **MinIO** (S3): almacena los ficheros `.fmu`, su `modelDescription.xml` extraído, y los `.ssd` (SystemStructureDescription) generados para simulaciones multi-FMU. Un *bucket* por `context` (namespace lógico, normalmente el *tenant*/gemelo digital).
-- **PostgreSQL**: almacena los esquemas de simulación (tabla `fmi_sim_schemmas`).
 - **InfluxDB**: fuente opcional de valores iniciales para variables de un FMU.
 - **Broker MQTT**: destino de los resultados de cada simulación, y fuente opcional de valores iniciales.
 - **Kubernetes API**: para crear/listar/borrar los `Job`/`CronJob` de cada simulación.
+
+Los esquemas de simulación se guardan en una base de datos **SQLite embebida en la propia API** (fichero local, sin servicio externo) — ver [Requisitos previos](#requisitos-previos).
 
 ## Flujo de uso
 
@@ -61,10 +62,10 @@ Servicios externos de los que depende el sistema:
 
 Un *esquema* describe qué FMUs participan en una simulación y, si son varios, cómo se conectan sus variables entre sí (equivalente a un SSP `SystemStructureDescription`).
 
-- **Crear esquema**: se guarda en PostgreSQL. Si incluye el campo `schema` (las conexiones), además se genera un `.ssd` (XML) y se sube a MinIO (solo hace falta para simulaciones de más de un FMU).
+- **Crear esquema**: se guarda en la base de datos SQLite de la API. Si incluye el campo `schema` (las conexiones), además se genera un `.ssd` (XML) y se sube a MinIO (solo hace falta para simulaciones de más de un FMU).
 - **Listar esquemas de un contexto.**
 - **Obtener un esquema** (404 si no existe).
-- **Borrar un esquema** (borra la fila de PostgreSQL y el `.ssd` de MinIO; 404 si no existe).
+- **Borrar un esquema** (borra la fila de SQLite y el `.ssd` de MinIO; 404 si no existe).
 
 ### Gestión de simulaciones
 
@@ -192,16 +193,7 @@ POST /fmi/simulations/opentwins
 
 - Un clúster de Kubernetes accesible. El manifiesto [`kubernetes/deployent.yaml`](kubernetes/deployent.yaml) referencia un `ServiceAccount` llamado `ot-fmi`, con permisos para crear/listar/borrar/pausar `Job` y `CronJob` y listar `Pod` en el namespace usado; ese `ServiceAccount` y su `Role`/`RoleBinding` están definidos en [`kubernetes/rbac.yaml`](kubernetes/rbac.yaml).
 - MinIO (u otro backend S3 compatible).
-- PostgreSQL, con una tabla para los esquemas. Tampoco hay script de migración en el repo; a partir de las consultas de [`sql_controller.py`](API%20controller/service/sql_controller.py) hace falta algo equivalente a:
-  ```sql
-  CREATE TABLE fmi_sim_schemmas (
-      id           VARCHAR NOT NULL,
-      context      VARCHAR NOT NULL,
-      name         VARCHAR,
-      sim_schemme  JSONB,
-      PRIMARY KEY (id, context)
-  );
-  ```
+- No hace falta ninguna base de datos externa para los esquemas: la API usa una SQLite embebida y crea la tabla sola al arrancar (ver [`main.py`](API%20controller/main.py)). El fichero se guarda en `SQLITE_DB_PATH`; en Kubernetes, [`kubernetes/deployent.yaml`](kubernetes/deployent.yaml) ya monta un `PersistentVolumeClaim` (`opentwins-fmi-api-data`) en `/usr/src/app/data` y apunta `SQLITE_DB_PATH` ahí, para que los esquemas sobrevivan a un reinicio del pod. Si tu cluster no tiene un `StorageClass` por defecto, indícalo en la `PersistentVolumeClaim` del manifiesto.
 - InfluxDB, si vas a usar inputs de tipo `influxdb`.
 - Un broker MQTT, para publicar resultados (y para inputs de tipo `mqtt`).
 - Docker y acceso a un registry de contenedores, para construir y publicar las 3 imágenes.
@@ -216,7 +208,7 @@ POST /fmi/simulations/opentwins
 | `INSIDE_CLUSTER` | `true`/`false`. `true` usa la configuración *in-cluster* (vía el `ServiceAccount` del pod); `false` usa `KUBE_HOST` + `TOKEN_KUBERNETES` (útil en desarrollo local contra un clúster remoto) |
 | `KUBE_HOST`, `TOKEN_KUBERNETES` | Solo si `INSIDE_CLUSTER=false` |
 | `MINIO_URL`, `MINIO_A_KEY`, `MINIO_S_KEY` | Endpoint y credenciales de MinIO |
-| `POSTGRE_HOST`, `POSTGRE_PORT` (opcional), `POSTGRE_DB`, `POSTGRE_USER`, `POSTGRE_PASSWORD` | Conexión a PostgreSQL |
+| `SQLITE_DB_PATH` (opcional) | Ruta del fichero SQLite donde se guardan los esquemas de simulación. Por defecto `fmi_schemas.db` en el directorio de trabajo; en [`kubernetes/deployent.yaml`](kubernetes/deployent.yaml) apunta al `PersistentVolumeClaim` montado |
 | `INFLUXDB_HOST`, `INFLUXDB_TOKEN`, `INFLUXDB_DB` | Valores por defecto que se inyectan a los executers desplegados |
 | `BROKER_TYPE`, `BROKER_IP`, `BROKER_PORT` (opcional), `BROKER_TOPIC`, `BROKER_USERNAME`, `BROKER_PASSWORD` | Broker por defecto para publicar resultados, si la simulación no indica su propio `targetConnection` |
 
@@ -248,7 +240,7 @@ POST /fmi/simulations/opentwins
 ```bash
 cd "API controller"
 pip install -r requirements.txt
-pip install python-multipart asyncpg   # el Dockerfile los instala aparte, no están en requirements.txt
+pip install python-multipart   # el Dockerfile lo instala aparte, no está en requirements.txt
 # definir las variables de entorno de la tabla anterior (p.ej. con un .env + tu gestor de entorno)
 ./run.sh      # o run.bat en Windows
 ```

@@ -1,3 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: opentwins-fmi-api-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -17,50 +28,49 @@ spec:
     spec:
       serviceAccountName: ot-fmi
       automountServiceAccountToken: true
+      volumes:
+        - name: opentwins-fmi-api-data
+          persistentVolumeClaim:
+            claimName: opentwins-fmi-api-data
       containers:
         - image: docker.ertis.uma.es/fmi-release/opentwins-fmi-simulator-api-v2:latest
           name: opentwins-fmi-api
-          # env:
+          env:
+          - name: SQLITE_DB_PATH
+            value: /usr/src/app/data/fmi_schemas.db
           # - name: KUBE_NAMESPACE
-          #   value: 
+          #   value:
           # - name: INSIDE_CLUSTER
-          #   value: 
+          #   value:
           # - name: INFLUXDB_HOST
-          #   value: 
+          #   value:
           # - name: INFLUXDB_TOKEN
-          #   value: 
+          #   value:
           # - name: INFLUXDB_DB
-          #   value: 
+          #   value:
           # - name: MINIO_TOKEN
-          #   value: 
+          #   value:
           # - name: MINIO_URL
-          #   value: 
+          #   value:
           # - name: MINIO_A_KEY
-          #   value: 
+          #   value:
           # - name: MINIO_S_KEY
-          #   value: 
-          # - name: POSTGRE_HOST
-          #   value: 
-          # - name: POSTGRE_PORT
-          #   value: 
-          # - name: POSTGRE_DB
-          #   value: 
-          # - name: POSTGRE_USER
-          #   value: 
-          # - name: POSTGRE_PASSWORD
-          #   value: 
+          #   value:
           # - name: BROKER_TYPE
-          #   value: 
+          #   value:
           # - name: BROKER_IP
-          #   value: 
+          #   value:
           # - name: BROKER_PORT
-          #   value: 
+          #   value:
           # - name: BROKER_TOPIC
-          #   value: 
+          #   value:
           # - name: BROKER_USERNAME
-          #   value: 
+          #   value:
           # - name: BROKER_PASSWORD
-          #   value: 
+          #   value:
+          volumeMounts:
+            - name: opentwins-fmi-api-data
+              mountPath: /usr/src/app/data
           ports:
             - containerPort: 8001
           imagePullPolicy: Always
