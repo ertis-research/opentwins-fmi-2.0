@@ -9,11 +9,14 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # install dependencies
-COPY requirements.txt /usr/src/app
+COPY "Multiple FMU executer/requirements.txt" /usr/src/app/requirements.txt
 RUN pip3 install -r requirements.txt
 
+# copy the code shared with the other executers
+COPY common /usr/src/app/common
+
 # copy project
-COPY . /usr/src/app/
+COPY "Multiple FMU executer/." /usr/src/app/
 
 EXPOSE 8001
 

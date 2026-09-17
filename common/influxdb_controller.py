@@ -12,11 +12,11 @@ class InfluxDBController:
         self.INFLUXDB_DB    = os.getenv('INFLUXDB_DB')
 
         self.client = influxdb_client.InfluxDBClient(url=self.INFLUXDB_HOST, token=self.INFLUXDB_TOKEN, org=self.INFLUXDB_DB)
-        
+
     def get_variable(self, query):
         query_api = self.client.query_api()
         tables = query_api.query(query)
-        
+
         result = json.loads(tables.to_json())
 
         if len(result) == 0:
@@ -25,4 +25,3 @@ class InfluxDBController:
             raise Exception("Query returned multiple values")
 
         return result[0]["_value"]
-        

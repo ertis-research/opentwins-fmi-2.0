@@ -4,7 +4,7 @@ import threading
 from paho.mqtt import client as mqtt_client
 import random
 
-from errors.errors import MQTTInputError
+from common.errors import MQTTInputError
 
 
 class MessageBrokerController:

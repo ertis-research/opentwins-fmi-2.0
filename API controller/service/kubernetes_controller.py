@@ -260,7 +260,7 @@ class KubernetesControllerService:
                         },
                         "spec": {
                             "containers": [{
-                                'image': "registry.ertis.uma.es/opentwins-fmu-runner-single-v2:latest" if len(schema["fmus"]) == 1 else "registry.ertis.uma.es/opentwins-fmu-runner-multiple-v2:latest", 
+                                'image': "docker.ertis.uma.es/fmi-release/opentwins-fmu-runner-single-v2:latest" if len(schema["fmus"]) == 1 else "docker.ertis.uma.es/fmi-release/opentwins-fmu-runner-multiple-v2:latest",
                                 'name': 'fmu-executer-'+SIMULATION_ID,
                                 'env': SIMULATION_ENV_VAR,
                                 'imagePullPolicy': 'Always'
@@ -309,7 +309,7 @@ class KubernetesControllerService:
                                 },
                                 "spec": {
                                     'containers': [{
-                                            'image': "registry.ertis.uma.es/opentwins-fmu-runner-single-v2:latest" if len(schema["fmus"]) == 1 else "registry.ertis.uma.es/opentwins-fmu-runner-multiple-v2:latest", 
+                                            'image': "docker.ertis.uma.es/fmi-release/opentwins-fmu-runner-single-v2:latest" if len(schema["fmus"]) == 1 else "docker.ertis.uma.es/fmi-release/opentwins-fmu-runner-multiple-v2:latest",
                                             'name': 'fmu-executer-'+SIMULATION_ID,
                                             'env': SIMULATION_ENV_VAR,
                                             'imagePullPolicy': 'Always'

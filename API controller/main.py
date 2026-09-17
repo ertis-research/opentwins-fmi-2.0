@@ -13,6 +13,11 @@ app = FastAPI()
 app.include_router(BaseRouter)
 
 
+@app.get("/", tags=["Health"])
+async def health_check():
+    return {"status": "ok"}
+
+
 # Centralized error handling: any of these exceptions raised from a route/service is turned into a
 # proper JSON response instead of propagating as an unhandled 500. Handlers for the more specific
 # exceptions are registered so they take precedence over their base class (e.g. SchemaNotFoundError

@@ -6,7 +6,7 @@ from loguru import logger
 import tempfile
 import shutil
 import zipfile
-from errors.errors import FMUError
+from common.errors import FMUError
 
 
 class MinioControllerService:

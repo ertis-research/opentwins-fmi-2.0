@@ -9,8 +9,8 @@ from fmpy.util import download_test_file, download_file
 from fmpy.simulation import _get_output_variables
 from fmpy import *
 from controllers.minio_controller import MinioControllerService
-from controllers.message_broker_controller import MessageBrokerController
-from controllers.influxdb_controller import InfluxDBController
+from common.message_broker_controller import MessageBrokerController
+from common.influxdb_controller import InfluxDBController
 from loguru import logger
 
 

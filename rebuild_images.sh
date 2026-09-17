@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-docker build -t registry.ertis.uma.es/opentwins-fmu-runner-single-v2 Single\ FMU\ executer/.
-docker build -t registry.ertis.uma.es/opentwins-fmu-runner-multiple-v2 Multiple\ FMU\ executer/.
+# Build context is the repo root so both images can also COPY the shared "common/" package.
+docker build -t docker.ertis.uma.es/fmi-release/opentwins-fmu-runner-single-v2 -f "Single FMU executer/Dockerfile" .
+docker build -t docker.ertis.uma.es/fmi-release/opentwins-fmu-runner-multiple-v2 -f "Multiple FMU executer/Dockerfile" .
 
-docker push registry.ertis.uma.es/opentwins-fmu-runner-single-v2
-docker push registry.ertis.uma.es/opentwins-fmu-runner-multiple-v2
+docker push docker.ertis.uma.es/fmi-release/opentwins-fmu-runner-single-v2
+docker push docker.ertis.uma.es/fmi-release/opentwins-fmu-runner-multiple-v2
